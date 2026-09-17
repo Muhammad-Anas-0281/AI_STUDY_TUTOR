@@ -141,12 +141,17 @@ export default function ProjectDashboardPage() {
           </Link>
 
           {/* AI Tutor */}
-          <div className="group bg-[#0f172a] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-indigo-500/5 flex flex-col justify-between">
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/tutor`}
+            className="group bg-[#0f172a] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-indigo-500/5 flex flex-col justify-between"
+          >
             <div>
               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
                 <MessageSquare className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-lg text-white">AI Tutor</h3>
+              <h3 className="font-semibold text-lg text-white group-hover:text-indigo-300 transition-colors">
+                AI Tutor
+              </h3>
               <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
                 Grounded chat with streaming tokens, page citations, and insufficient evidence refusal.
               </p>
@@ -157,15 +162,20 @@ export default function ProjectDashboardPage() {
                 Start Chat <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Adaptive Quiz */}
-          <div className="group bg-[#0f172a] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-indigo-500/5 flex flex-col justify-between">
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
+            className="group bg-[#0f172a] border border-[#1e293b] hover:border-emerald-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-emerald-500/5 flex flex-col justify-between"
+          >
             <div>
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-lg text-white">Adaptive Assessment</h3>
+              <h3 className="font-semibold text-lg text-white group-hover:text-emerald-300 transition-colors">
+                Adaptive Assessment
+              </h3>
               <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
                 MCQ and open-ended questions targeting weak concepts with LLM rubric grading.
               </p>
@@ -176,7 +186,7 @@ export default function ProjectDashboardPage() {
                 Take Quiz <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Growth & Analytics */}
           <div className="group bg-[#0f172a] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-indigo-500/5 flex flex-col justify-between">

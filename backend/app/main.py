@@ -8,7 +8,7 @@ from app.db.session import engine
 from app.db.base import Base
 # Import models to ensure they register on Base.metadata
 import app.db.models  # noqa: F401
-from app.routers import auth, spaces, projects, materials
+from app.routers import auth, spaces, projects, materials, tutor, quiz
 
 
 @asynccontextmanager
@@ -45,6 +45,9 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(spaces.router, prefix="/api/v1")
 app.include_router(projects.router, prefix="/api/v1")
 app.include_router(materials.router, prefix="/api/v1")
+app.include_router(tutor.router, prefix="/api/v1")
+app.include_router(quiz.router, prefix="/api/v1")
+
 
 
 @app.get("/")

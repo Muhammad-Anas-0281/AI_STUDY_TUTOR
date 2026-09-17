@@ -90,3 +90,41 @@ This document records the user prompts, actions performed, timestamps, and corre
   6. Built modern two-pane AI Tutor Chat UI in Next.js using shadcn/ui with live streaming tokens, expandable Sources panel (page-level citations), and amber Insufficient Evidence banner.
 
 ---
+
+### Entry 7
+- **Phase**: Phase 2 — AI Tutor (Frontend Interface & End-to-End Grounded Streaming)
+- **Timestamp**: 2026-09-17T18:51:25+05:30
+- **User Prompt**:
+  > "please continue where you have stopped from 
+  > Why is this antigravidty keep on crashing i dont understand"
+- **Work Done**:
+  1. Handled session reconnection and optimized execution memory to prevent local subprocess memory spikes.
+  2. Built the Frontend AI Tutor Interface (`frontend/app/spaces/[spaceId]/projects/[projectId]/tutor/page.tsx`) with full SSE streaming consumption, markdown rendering, expandable citations source drawer, and amber Insufficient Evidence refusal banner.
+  3. Linked the AI Tutor card in the Project Dashboard to the live Tutor page.
+  4. Tested and verified production build with `npm run build` and integration tests.
+
+---
+
+### Entry 8
+- **Phase**: Phase 3 — Adaptive Quiz & Assessment Engine
+- **Timestamp**: 2026-09-17T19:04:30+05:30
+- **User Prompt**:
+  > Continuation of blueprint execution: Implement Phase 3 (Adaptive Quiz & Assessment Engine).
+- **Work Done**:
+  1. **Concept Extraction & Mastery Schemas**: Built `backend/app/schemas/concept.py` and `backend/app/schemas/quiz.py` with structured Pydantic models for concept extraction, adaptive question generation, deterministic MCQ grading, and LLM rubric evaluations.
+  2. **Concept Extraction Service**: Implemented `backend/app/services/concept_service.py` to analyze uploaded study materials and extract 5–10 core learning concepts with initialized mastery entries (`score=0.0`, `status="needs_attention"`).
+  3. **Adaptive Question Generator**: Implemented `backend/app/services/assessment_service.py` with weighted concept selection (prioritizing low mastery and low evidence count) and multi-tier prompt composition to produce balanced MCQs + Open-Ended conceptual questions.
+  4. **Rubric Grading & Mastery Engine**: Built hybrid grading pipeline:
+     - **MCQ**: Deterministic key comparison with instantaneous scoring.
+     - **Open-Ended**: LLM Rubric evaluation (`understood`, `missing`, `key_concepts` tags) via structured output with Gemini & Groq fallback.
+     - **Mastery Update**: Bayesian-flavored moving average updating `mastery.score` and status transitions (`improving` / `stable` / `needs_attention`).
+  5. **API Endpoints**: Implemented and registered `backend/app/routers/quiz.py` (`POST /quiz/generate`, `POST /quiz/{attempt_id}/submit`, `GET /quiz/{attempt_id}`, `GET /quiz/history`, `POST /concepts/extract`, `GET /concepts`).
+  6. **Interactive Frontend Assessment UI**: Created `frontend/app/spaces/[spaceId]/projects/[projectId]/quiz/page.tsx` with:
+     - **Adaptive Quiz Runner**: Step-by-step navigation, custom MCQ option selectors, Open-ended response textarea, and progress indicators.
+     - **Live Grading State**: Animated AI Rubric evaluator indicator.
+     - **Results Screen**: Overall score gauge, Mastery Delta breakdown (`+15%`), and expandable question-by-question AI rubric reviews.
+     - **Concept Mastery & History Tabs**: Real-time mastery visualizer and past quiz log.
+  7. **Integration & Build Verification**: Verified end-to-end quiz generation, MCQ grading, AI open-ended rubric evaluation, and mastery deltas with `test_phase3_quiz.py` (passed 100%) and validated Next.js production build with `npm run build`.
+
+
+---

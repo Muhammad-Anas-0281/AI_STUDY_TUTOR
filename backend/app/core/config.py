@@ -1,7 +1,12 @@
+import os
+from pathlib import Path
 from typing import List, Union
 import json
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+ENV_PATH = BASE_DIR / ".env"
 
 
 class Settings(BaseSettings):
@@ -40,7 +45,7 @@ class Settings(BaseSettings):
         return ["*"]
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=str(ENV_PATH) if ENV_PATH.exists() else ".env",
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=True
@@ -48,3 +53,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+

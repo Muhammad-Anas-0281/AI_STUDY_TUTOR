@@ -186,6 +186,37 @@ class ApiClient {
       body: JSON.stringify({ query, top_k: topK }),
     });
   }
+
+  // Convenience HTTP methods
+  async get<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, { ...options, method: "GET" });
+    return { data };
+  }
+
+  async post<T = any>(endpoint: string, body?: any, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      ...options,
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  }
+
+  async put<T = any>(endpoint: string, body?: any, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      ...options,
+      method: "PUT",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  }
+
+  async delete<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, { ...options, method: "DELETE" });
+    return { data };
+  }
 }
 
 export const api = new ApiClient();
+export default api;
+

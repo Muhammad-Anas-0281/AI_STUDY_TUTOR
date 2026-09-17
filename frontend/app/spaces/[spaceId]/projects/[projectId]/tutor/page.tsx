@@ -151,21 +151,26 @@ export default function TutorPage() {
               const eventData = JSON.parse(line.substring(6));
 
               setMessages((prev) => {
-                const updated = [...prev];
-                const lastIdx = updated.length - 1;
-                if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-                  if (eventData.type === "meta") {
-                    updated[lastIdx].citations = eventData.citations || [];
-                    updated[lastIdx].insufficient_evidence = eventData.insufficient_evidence;
-                    updated[lastIdx].confidence_score = eventData.confidence_score;
-                  } else if (eventData.type === "token") {
-                    updated[lastIdx].content += eventData.token;
-                  } else if (eventData.type === "done") {
-                    updated[lastIdx].id = eventData.message_id || updated[lastIdx].id;
-                    updated[lastIdx].citations = eventData.citations || updated[lastIdx].citations;
-                    updated[lastIdx].insufficient_evidence = eventData.insufficient_evidence;
-                  }
+                const lastIdx = prev.length - 1;
+                if (lastIdx < 0 || prev[lastIdx].role !== "assistant") return prev;
+
+                const lastMsg = prev[lastIdx];
+                let updatedMsg = { ...lastMsg };
+
+                if (eventData.type === "meta") {
+                  updatedMsg.citations = eventData.citations || [];
+                  updatedMsg.insufficient_evidence = eventData.insufficient_evidence;
+                  updatedMsg.confidence_score = eventData.confidence_score;
+                } else if (eventData.type === "token") {
+                  updatedMsg.content = lastMsg.content + eventData.token;
+                } else if (eventData.type === "done") {
+                  updatedMsg.id = eventData.message_id || lastMsg.id;
+                  updatedMsg.citations = eventData.citations || lastMsg.citations;
+                  updatedMsg.insufficient_evidence = eventData.insufficient_evidence;
                 }
+
+                const updated = [...prev];
+                updated[lastIdx] = updatedMsg;
                 return updated;
               });
             } catch (jsonErr) {

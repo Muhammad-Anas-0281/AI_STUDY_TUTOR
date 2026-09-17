@@ -191,4 +191,21 @@ This document records the user prompts, actions performed, timestamps, and corre
      - Tested Out-of-Scope Query (Cookie recipe refusal without hallucination).
      - All 3 tests executed with 100% precision, academic depth, and perfect refusal behavior.
 
+---
+
+### Entry 12
+- **Phase**: Frontend Stream Bug Fix & Architecture Explanation
+- **Timestamp**: 2026-09-17T21:26:00+05:30
+- **User Prompt**:
+  > "Getting these type of answers can you explain me what have you done and what is this project"
+- **Work Done**:
+  1. **Diagnosed UI Token Duplication**:
+     - Identified that the frontend React streaming loop was performing an in-place mutation on the existing message state object (`updated[lastIdx].content += eventData.token`), which caused React 18 / Strict Mode's double-invocation check to concatenate every token twice (e.g. `FastFastAPIAPI is is a a modern modern`).
+  2. **Fixed Streaming State Updater** (`frontend/app/spaces/[spaceId]/projects/[projectId]/tutor/page.tsx`):
+     - Cloned the message object cleanly in the state updater (`{ ...lastMsg, content: lastMsg.content + eventData.token }`) preventing duplicate text accumulation.
+     - Verified clean production build with `npm run build`.
+  3. **Comprehensive Project & Architecture Explanation**:
+     - Provided the user with a complete overview of the project vision, what has been constructed across all phases, and why the duplicated text occurred and is now fixed.
+
+
 

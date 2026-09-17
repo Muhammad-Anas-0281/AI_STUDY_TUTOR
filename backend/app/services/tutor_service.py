@@ -50,34 +50,43 @@ class TutorService:
         db.add(user_msg)
         await db.commit()
 
-        # 2. Retrieve Relevant Project Materials via pgvector
+        # 2. Retrieve Relevant Project Materials via pgvector (top 6 chunks)
         chunks = await retrieval_service.search(
             project_id=project.id,
             query=question,
-            top_k=4,
+            top_k=6,
             db=db
         )
 
         # 3. Compute Evidence Confidence Score
         top_similarity = chunks[0]["similarity"] if chunks else 0.0
-        # If top similarity is below 0.28 or no chunks found, confidence is LOW
-        insufficient_evidence = bool(not chunks or top_similarity < 0.28)
-        confidence_level = "LOW" if insufficient_evidence else "HIGH"
+        
+        # Thresholds:
+        # >= 0.28: HIGH confidence
+        # 0.18 - 0.28: MODERATE confidence
+        # < 0.18: LOW confidence (insufficient evidence)
+        insufficient_evidence = bool(not chunks or top_similarity < 0.18)
+        confidence_level = (
+            "HIGH (Direct textual evidence found)" if top_similarity >= 0.28
+            else ("MODERATE (Partial/related concepts found)" if top_similarity >= 0.18
+            else "LOW (No direct evidence in uploaded materials)")
+        )
 
-        # Prepare Citations
+        # Prepare Citations (all chunks with similarity >= 0.15)
         citations = []
-        if not insufficient_evidence:
-            seen = set()
-            for c in chunks:
-                if c["similarity"] >= 0.28:
-                    key = (c["filename"], c["page_number"])
-                    if key not in seen:
-                        seen.add(key)
-                        citations.append({
-                            "filename": c["filename"],
-                            "page_number": c["page_number"],
-                            "similarity": c["similarity"]
-                        })
+        relevant_chunks = []
+        seen = set()
+        for c in chunks:
+            if c["similarity"] >= 0.15:
+                relevant_chunks.append(c)
+                key = (c["filename"], c["page_number"])
+                if key not in seen:
+                    seen.add(key)
+                    citations.append({
+                        "filename": c["filename"],
+                        "page_number": c["page_number"],
+                        "similarity": c["similarity"]
+                    })
 
         # 4. Fetch recent conversation history
         hist_res = await db.execute(
@@ -98,7 +107,7 @@ class TutorService:
             confidence_level=confidence_level
         )
         context_prompt = format_tutor_context(
-            retrieved_chunks=chunks if not insufficient_evidence else [],
+            retrieved_chunks=relevant_chunks if not insufficient_evidence else chunks[:2],
             conversation_summary="",
             recent_messages=recent_msgs,
             user_question=question

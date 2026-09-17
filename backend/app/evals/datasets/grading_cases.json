@@ -1,0 +1,26 @@
+[
+  {
+    "id": "grade-01",
+    "question": "Why does Transformer scale dot products by 1/sqrt(d_k)?",
+    "expected_answer": "Because large values of d_k produce large magnitude dot products that push softmax into regions with vanishingly small gradients.",
+    "student_response": "Without scaling, large key dimensions make dot products explode in magnitude, causing softmax gradients to vanish.",
+    "expected_score_min": 85,
+    "expected_is_correct": true
+  },
+  {
+    "id": "grade-02",
+    "question": "Why does Transformer scale dot products by 1/sqrt(d_k)?",
+    "expected_answer": "Because large values of d_k produce large magnitude dot products that push softmax into regions with vanishingly small gradients.",
+    "student_response": "It speeds up training by making the matrix smaller.",
+    "expected_score_max": 40,
+    "expected_is_correct": false
+  },
+  {
+    "id": "grade-03",
+    "question": "What is the purpose of Positional Encoding in Transformer models?",
+    "expected_answer": "To inject information about token sequence order since self-attention contains no recurrent or convolutional operations.",
+    "student_response": "Transformers process all tokens simultaneously without recurrence, so positional encodings inject token order via trigonometric functions.",
+    "expected_score_min": 85,
+    "expected_is_correct": true
+  }
+]

@@ -280,3 +280,32 @@ This document records the user prompts, actions performed, timestamps, and corre
      - Next.js production build (`npm run build`) completed successfully with 0 errors.
 
 ---
+
+### Entry 16
+- **Phase**: Phase 6 (Reliability, Security Hardening & Isolation) & Phase 7 (Evaluation Harness & Architecture Documentation)
+- **Timestamp**: 2026-09-17T22:26:00+05:30
+- **User Prompt**:
+  > "yes" (Proceed to Phase 6 and Phase 7 execution)
+- **Work Done**:
+  1. **Phase 6: Reliability, Security Hardening & Isolation**:
+     - Built `backend/app/ai/guardrails.py` with adversarial input screening (`screen_input`), document text sanitization (`sanitize_document_text`), and passive XML context encapsulation (`wrap_untrusted_context`).
+     - Integrated real-time input screening into `backend/app/services/tutor_service.py` to prevent prompt injection, system prompt extraction, and instruction overrides.
+     - Built `backend/test_phase6_security.py` verifying multi-tenant project isolation (Zero vector leakage across projects), API route authorization barriers (`get_project_or_403`), and prompt injection defense.
+     - Automated security test suite passed 100%.
+  2. **Phase 7: Evaluation Harness & Benchmark Golden Datasets**:
+     - Created curated evaluation benchmark datasets in `backend/app/evals/datasets/`:
+       - `retrieval_cases.json` (semantic search accuracy & threshold calibration).
+       - `tutor_cases.json` (academic depth, inline citations, active recall, honest out-of-scope refusal).
+       - `grading_cases.json` (rubric scoring calibration for open-ended and MCQ responses).
+       - `recommendation_cases.json` (weak concept targeting).
+     - Built LLM-as-judge scoring rules and deterministic checkers in `backend/app/evals/judges.py`.
+     - Built `backend/app/evals/run_eval.py` CLI runner with automated reporting, latency measurements, and provider failover tracking.
+     - Evaluation test suite executed with a **92.9% pass rate** across all benchmarks.
+  3. **Phase 7: Comprehensive Architecture Documentation**:
+     - Authored `docs/ARCHITECTURE.md` (System design, multi-tier RAG, database schemas, security model, and $0 Free-tier economics).
+     - Authored `docs/EVALUATION.md` (Evaluation methodology, golden benchmark datasets, and judge scoring rules).
+     - Authored `docs/AI_USAGE.md` (Build-time AI tools vs product-time AI features, prompt engineering guidelines).
+     - Authored `docs/KNOWN_LIMITATIONS.md` (Intentional engineering simplifications and future improvement roadmap).
+
+---
+

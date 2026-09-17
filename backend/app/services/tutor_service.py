@@ -12,6 +12,7 @@ from app.ai.providers.groq_provider import groq_provider
 from app.ai.providers.gemini_provider import gemini_provider
 from app.ai.prompts.tutor_prompt import get_tutor_system_prompt, format_tutor_context
 from app.ai.usage_tracker import usage_tracker
+from app.ai.guardrails import screen_input, sanitize_document_text
 
 
 class TutorService:
@@ -40,6 +41,47 @@ class TutorService:
         start_time = time.time()
         session = await self.get_or_create_session(project.id, session_id, db)
 
+        # 0. Prompt Injection & Adversarial Input Screening
+        guard_res = screen_input(question)
+        if not guard_res.is_safe:
+            security_response = (
+                "⚠️ **Security Notice**: I am configured strictly as an academic study tutor for your project materials. "
+                "I cannot alter my core pedagogical guidelines, bypass safety rules, or disclose internal system prompts. "
+                f"Please feel free to ask any academic question related to **{project.name}**!"
+            )
+            # Yield metadata
+            yield {
+                "type": "meta",
+                "session_id": session.id,
+                "citations": [],
+                "confidence_score": 0.0,
+                "insufficient_evidence": True
+            }
+            yield {"type": "token", "token": security_response}
+            
+            # Save messages
+            user_msg = TutorMessage(session_id=session.id, role="user", content=question, citations=[])
+            asst_msg = TutorMessage(
+                session_id=session.id,
+                role="assistant",
+                content=security_response,
+                citations=[],
+                confidence_score=0.0,
+                insufficient_evidence=True
+            )
+            db.add(user_msg)
+            db.add(asst_msg)
+            await db.commit()
+
+            yield {
+                "type": "done",
+                "message_id": asst_msg.id,
+                "session_id": session.id,
+                "citations": [],
+                "insufficient_evidence": True
+            }
+            return
+
         # 1. Save Learner Question
         user_msg = TutorMessage(
             session_id=session.id,
@@ -53,7 +95,7 @@ class TutorService:
         # 2. Retrieve Relevant Project Materials via pgvector (top 6 chunks)
         chunks = await retrieval_service.search(
             project_id=project.id,
-            query=question,
+            query=guard_res.sanitized_text or question,
             top_k=6,
             db=db
         )

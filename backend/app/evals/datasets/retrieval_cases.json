@@ -1,0 +1,26 @@
+[
+  {
+    "id": "retrieval-01",
+    "query": "Why scale attention logits by square root of dk?",
+    "target_substring": "pushing the softmax function into regions where it has extremely small gradients",
+    "min_similarity": 0.30
+  },
+  {
+    "id": "retrieval-02",
+    "query": "sine and cosine positional encodings formula",
+    "target_substring": "sine and cosine functions of different frequencies",
+    "min_similarity": 0.30
+  },
+  {
+    "id": "retrieval-03",
+    "query": "FastAPI async session dependency injection",
+    "target_substring": "Dependency Injection system designed to be simple to use",
+    "min_similarity": 0.25
+  },
+  {
+    "id": "retrieval-04",
+    "query": "Irrelevant query about baking strawberry pies",
+    "expected_insufficient": true,
+    "max_acceptable_similarity": 0.20
+  }
+]

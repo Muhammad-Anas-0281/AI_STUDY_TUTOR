@@ -1,0 +1,16 @@
+[
+  {
+    "id": "rec-01",
+    "weak_concepts": ["Positional Encodings", "Softmax Gradients"],
+    "recent_errors": ["Confused sine/cosine frequencies with RNN hidden states", "Forgot 1/sqrt(d_k) factor"],
+    "goal": "Master Transformer Architecture for NLP exams",
+    "expected_themes": ["positional", "gradient", "formula", "practice", "attention"]
+  },
+  {
+    "id": "rec-02",
+    "weak_concepts": ["FastAPI AsyncPG Sessions"],
+    "recent_errors": ["Encountered MissingGreenlet due to lazy-loading after commit"],
+    "goal": "Build production asynchronous web services",
+    "expected_themes": ["async", "session", "commit", "expire", "dependency"]
+  }
+]

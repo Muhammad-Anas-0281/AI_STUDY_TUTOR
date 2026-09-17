@@ -263,6 +263,7 @@ class AssessmentService:
         project_id: str,
         attempt_id: str,
         submission: QuizSubmitRequest,
+        user_id: Optional[str] = None,
     ) -> QuizResultResponse:
         """Grades all answers in attempt, updates mastery scores, and returns comprehensive results."""
         # 1. Fetch attempt and questions
@@ -275,6 +276,10 @@ class AssessmentService:
         attempt = res.scalar_one_or_none()
         if not attempt:
             raise ValueError("Quiz attempt not found")
+
+        # Capture scalar attributes before potential commit expiration
+        attempt_id_val = attempt.id
+        project_id_val = attempt.project_id
 
         # Mapping for fast question lookup
         question_map = {q.id: q for q in attempt.questions}
@@ -309,72 +314,86 @@ class AssessmentService:
                     "key_concepts": eval_res.key_concepts,
                 }
 
-            total_score_sum += q_score
             if is_correct:
                 correct_count += 1
+            total_score_sum += q_score
 
-            if q.concept_id:
-                concept_evaluations.setdefault(q.concept_id, []).append(q_score)
-
-            # Persist Answer in DB
-            ans_record = Answer(
-                id=str(uuid.uuid4()),
-                question_id=q.id,
-                user_response=user_resp,
-                is_correct=is_correct,
-                score=q_score,
-                feedback=rubric_dict,
-                evaluated_at=datetime.now(timezone.utc),
-            )
-            db.add(ans_record)
-
-            # Get concept name if available
-            c_name = None
-            if q.concept_id:
-                c_obj = await db.get(Concept, q.concept_id)
-                if c_obj:
-                    c_name = c_obj.name
+            # Save / update question answer record in DB
+            if q.answer:
+                q.answer.user_response = user_resp
+                q.answer.is_correct = is_correct
+                q.answer.score = q_score
+                q.answer.feedback = rubric_dict
+                q.answer.evaluated_at = datetime.now(timezone.utc)
+            else:
+                ans_record = Answer(
+                    id=str(uuid.uuid4()),
+                    question_id=q.id,
+                    user_response=user_resp,
+                    is_correct=is_correct,
+                    score=q_score,
+                    feedback=rubric_dict,
+                    evaluated_at=datetime.now(timezone.utc),
+                )
+                db.add(ans_record)
 
             graded_feedback_list.append(
                 GradedAnswerFeedback(
                     question_id=q.id,
-                    concept_name=c_name,
                     type=q.type,
                     user_response=user_resp,
-                    correct_answer=q.correct_answer,
-                    explanation=q.explanation,
                     is_correct=is_correct,
                     score=q_score,
+                    correct_answer=q.correct_answer,
+                    explanation=q.explanation,
                     rubric_feedback=rubric_dict,
                 )
             )
 
-        # 3. Finalize attempt score
-        total_q_count = len(attempt.questions) or 1
-        final_percentage = round((total_score_sum / total_q_count) * 100.0, 1)
-        attempt.status = "completed"
-        attempt.score = final_percentage
-        attempt.completed_at = datetime.now(timezone.utc)
+            # Accumulate scores per concept
+            if q.concept_id:
+                if q.concept_id not in concept_evaluations:
+                    concept_evaluations[q.concept_id] = []
+                concept_evaluations[q.concept_id].append(q_score)
 
-        # 4. Update Mastery for each evaluated concept
+        # 3. Finalize attempt summary
+        total_q_count = len(attempt.questions) or 1
+        final_percentage = round((total_score_sum / total_q_count) * 100, 1)
+        completed_at_val = datetime.now(timezone.utc)
+
+        attempt.score = final_percentage
+        attempt.status = "completed"
+        attempt.completed_at = completed_at_val
+
+        # 4. Update Mastery scores per concept
         mastery_deltas: List[MasteryDelta] = []
         for cid, scores in concept_evaluations.items():
-            concept_obj = await db.get(Concept, cid)
+            if not cid:
+                continue
+            # Get concept name
+            c_stmt = select(Concept).where(Concept.id == cid)
+            c_res = await db.execute(c_stmt)
+            concept_obj = c_res.scalar_one_or_none()
             if not concept_obj:
                 continue
 
-            mastery_stmt = select(Mastery).where(Mastery.concept_id == cid, Mastery.project_id == project_id)
-            m_res = await db.execute(mastery_stmt)
+            # Fetch existing mastery
+            m_stmt = select(Mastery).where(Mastery.concept_id == cid, Mastery.project_id == project_id)
+            m_res = await db.execute(m_stmt)
             mastery = m_res.scalar_one_or_none()
 
-            avg_test_score = (sum(scores) / len(scores)) * 100.0
+            avg_score_100 = (sum(scores) / len(scores)) * 100
             old_score = mastery.score if mastery else 0.0
-            old_count = mastery.evidence_count if mastery else 0
 
-            # Bayesian weighted moving average: new_score = (old_score * old_count + avg_test_score) / (old_count + 1)
-            new_score = round(((old_score * old_count) + avg_test_score) / (old_count + 1), 1)
-            new_count = old_count + 1
-            new_status = "improving" if new_score >= 75.0 else ("stable" if new_score >= 50.0 else "needs_attention")
+            if not mastery:
+                new_score = round(avg_score_100, 1)
+                new_count = len(scores)
+            else:
+                # Exponential moving average (70% old, 30% new evidence)
+                new_score = round((old_score * 0.7) + (avg_score_100 * 0.3), 1)
+                new_count = mastery.evidence_count + len(scores)
+
+            new_status = "mastered" if new_score >= 80 else ("practicing" if new_score >= 40 else "struggling")
 
             if not mastery:
                 mastery = Mastery(
@@ -405,29 +424,33 @@ class AssessmentService:
 
         await db.commit()
 
-        # Log Learning Event
-        from app.services.event_service import event_service
-        await event_service.log_event(
-            db=db,
-            user_id="learner",
-            event_type="quiz_completed",
-            project_id=project_id,
-            payload={
-                "attempt_id": attempt.id,
-                "score": final_percentage,
-                "correct_count": correct_count,
-                "total_questions": total_q_count,
-            },
-            idempotency_key=f"quiz_complete_{attempt.id}"
-        )
+        # Log Learning Event if user_id is provided and valid
+        if user_id:
+            try:
+                from app.services.event_service import event_service
+                await event_service.log_event(
+                    db=db,
+                    user_id=user_id,
+                    event_type="quiz_completed",
+                    project_id=project_id_val,
+                    payload={
+                        "attempt_id": attempt_id_val,
+                        "score": final_percentage,
+                        "correct_count": correct_count,
+                        "total_questions": total_q_count,
+                    },
+                    idempotency_key=f"quiz_complete_{attempt_id_val}"
+                )
+            except Exception as ev_err:
+                print(f"Event logging skipped: {ev_err}")
 
         return QuizResultResponse(
-            attempt_id=attempt.id,
-            project_id=attempt.project_id,
+            attempt_id=attempt_id_val,
+            project_id=project_id_val,
             total_score=final_percentage,
             total_questions=total_q_count,
             correct_count=correct_count,
-            completed_at=attempt.completed_at or datetime.now(timezone.utc),
+            completed_at=completed_at_val,
             answers=graded_feedback_list,
             mastery_deltas=mastery_deltas,
         )

@@ -37,7 +37,7 @@ async def extract_project_concepts(
     db: AsyncSession = Depends(get_db)
 ):
     """Extract 5-10 core concepts from project documents."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     concepts = await concept_service.extract_concepts_for_project(
         db=db, project_id=project_id, user_id=current_user.id, force_refresh=force
     )
@@ -51,7 +51,7 @@ async def get_project_concepts(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all concepts and mastery levels for a project."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     concepts = await concept_service.get_project_concepts(db, project_id)
     return concepts
 
@@ -66,7 +66,7 @@ async def generate_quiz(
     db: AsyncSession = Depends(get_db)
 ):
     """Generate an adaptive quiz with questions grounded in the project's concepts & materials."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     try:
         quiz_attempt = await assessment_service.generate_adaptive_quiz(
             db=db,
@@ -90,7 +90,7 @@ async def get_quiz_history(
     db: AsyncSession = Depends(get_db)
 ):
     """Get history of past quiz attempts for this project."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     stmt = (
         select(QuizAttempt)
         .where(QuizAttempt.project_id == project_id)
@@ -108,7 +108,7 @@ async def get_quiz_attempt(
     db: AsyncSession = Depends(get_db)
 ):
     """Get quiz attempt details."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     stmt = (
         select(QuizAttempt)
         .where(QuizAttempt.id == attempt_id, QuizAttempt.project_id == project_id)
@@ -182,13 +182,14 @@ async def submit_quiz(
     db: AsyncSession = Depends(get_db)
 ):
     """Submit quiz answers, grade open-ended & MCQs, update mastery, and return detailed report."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     try:
         results = await assessment_service.submit_quiz(
             db=db,
             project_id=project_id,
             attempt_id=attempt_id,
             submission=submission,
+            user_id=current_user.id,
         )
         return results
     except ValueError as ve:

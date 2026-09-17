@@ -21,7 +21,7 @@ from sqlalchemy import select
 async def run_phase3_test():
     print("=== Testing Phase 3: Adaptive Quiz & Assessment Pipeline ===")
     async with async_session_maker() as db:
-        # 1. Get existing project
+        # 1. Get existing project and user
         proj_stmt = select(Project).limit(1)
         res = await db.execute(proj_stmt)
         project = res.scalar_one_or_none()
@@ -30,12 +30,17 @@ async def run_phase3_test():
             print("No existing project found to test against.")
             return
 
+        user_stmt = select(User).limit(1)
+        u_res = await db.execute(user_stmt)
+        user = u_res.scalar_one_or_none()
+        user_id = user.id if user else "test-user"
+
         print(f"Testing with Project ID: {project.id} - Name: {project.name}")
 
         # 2. Extract Concepts
         print("\nStep 1: Testing Concept Extraction...")
         concepts = await concept_service.extract_concepts_for_project(
-            db=db, project_id=project.id, user_id="test-user", force_refresh=True
+            db=db, project_id=project.id, user_id=user_id, force_refresh=True
         )
         print(f"Extracted/Found {len(concepts)} concepts:")
         for c in concepts:
@@ -47,7 +52,7 @@ async def run_phase3_test():
         quiz_response = await assessment_service.generate_adaptive_quiz(
             db=db,
             project_id=project.id,
-            user_id="test-user",
+            user_id=user_id,
             num_questions=3,
             difficulty="adaptive"
         )
@@ -77,6 +82,7 @@ async def run_phase3_test():
             project_id=project.id,
             attempt_id=quiz_response.id,
             submission=submit_req,
+            user_id=user_id,
         )
 
         print(f"\nQuiz Evaluated Successfully!")

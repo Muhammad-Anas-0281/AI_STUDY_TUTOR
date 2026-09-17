@@ -226,6 +226,26 @@ This document records the user prompts, actions performed, timestamps, and corre
      - Added a "➕ New Chat" button to seamlessly start a fresh conversation session.
   3. **Verified Production Build**: `npm run build` compiled with 0 errors.
 
+---
+
+### Entry 14
+- **Phase**: Backend Dependency & Async Session Error Fix
+- **Timestamp**: 2026-09-17T21:51:10+05:30
+- **User Prompt**:
+  > "INFO: 127.0.0.1:58591 - 'GET /api/v1/projects/.../quiz/history HTTP/1.1' 500 Internal Server Error ... AttributeError: 'str' object has no attribute 'id' ... Failed to generate adaptive quiz. Make sure study materials are uploaded. REsolve this one also tell me what the error is exactly"
+- **Work Done**:
+  1. **Diagnosed Root Cause for `AttributeError: 'str' object has no attribute 'id'`**:
+     - In `backend/app/core/deps.py`, `get_project_or_403` expected a `User` ORM object and accessed `current_user.id`. In `quiz.py` and `growth.py`, callers were passing `current_user.id` (a `str`), causing `'str' object has no attribute 'id'` and HTTP 500 across all quiz and concept endpoints.
+     - Updated `deps.get_project_or_403` to flexibly accept either `User` model or string `user_id`.
+     - Standardized router calls in `quiz.py` and `growth.py` to pass `current_user` directly.
+  2. **Fixed Async Commit Expiration & Missing `type` in GradedAnswerFeedback**:
+     - Updated `assessment_service.py` to capture scalar attributes prior to `db.commit()` to prevent SQLAlchemy async lazy-load greenlet errors.
+     - Added `type=q.type` to `GradedAnswerFeedback` initialization.
+     - Passed actual `user_id` to `submit_quiz` to prevent foreign key violation on learning events.
+  3. **Verification**:
+     - Ran `test_phase3_quiz.py` verifying concept extraction, adaptive quiz generation, MCQ grading, AI open-ended rubric evaluation, and mastery deltas (100% pass).
+
+
 
 
 

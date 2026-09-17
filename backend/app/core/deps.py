@@ -61,10 +61,11 @@ async def get_project_or_403(
     Enforces strict project-level data isolation.
     Validates that the project exists and belongs to a space owned by current_user.
     """
+    user_id = current_user.id if hasattr(current_user, "id") else str(current_user)
     query = (
         select(Project)
         .join(Space, Project.space_id == Space.id)
-        .where(Project.id == project_id, Space.user_id == current_user.id)
+        .where(Project.id == project_id, Space.user_id == user_id)
         .options(selectinload(Project.space))
     )
     result = await db.execute(query)

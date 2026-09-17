@@ -27,7 +27,7 @@ async def get_project_growth(
     db: AsyncSession = Depends(get_db),
 ):
     """Get project learning growth trends, concept mastery distributions, and weak concept alerts."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     return await growth_service.compute_project_growth(db=db, project_id=project_id)
 
 
@@ -41,7 +41,7 @@ async def get_project_recommendations(
     db: AsyncSession = Depends(get_db),
 ):
     """Fetch all study recommendations for this project."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     return await recommendation_service.get_project_recommendations(
         db=db, project_id=project_id, status=status
     )
@@ -54,7 +54,7 @@ async def generate_project_recommendations(
     db: AsyncSession = Depends(get_db),
 ):
     """Generate new AI study recommendations grounded in weak concepts, mistakes, and project goals."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     try:
         return await recommendation_service.generate_recommendations(
             db=db, project_id=project_id, user_id=current_user.id
@@ -75,7 +75,7 @@ async def update_recommendation_status(
     db: AsyncSession = Depends(get_db),
 ):
     """Update recommendation status (pending -> completed / dismissed)."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     try:
         return await recommendation_service.update_recommendation_status(
             db=db,
@@ -98,7 +98,7 @@ async def get_project_events(
     db: AsyncSession = Depends(get_db),
 ):
     """Get chronological activity and learning event stream for a project."""
-    await deps.get_project_or_403(project_id, current_user.id, db)
+    await deps.get_project_or_403(project_id, current_user, db)
     return await event_service.get_project_events(db=db, project_id=project_id, limit=limit)
 
 

@@ -207,5 +207,25 @@ This document records the user prompts, actions performed, timestamps, and corre
   3. **Comprehensive Project & Architecture Explanation**:
      - Provided the user with a complete overview of the project vision, what has been constructed across all phases, and why the duplicated text occurred and is now fixed.
 
+---
+
+### Entry 13
+- **Phase**: API URL Sanitization & Chat History Persistence
+- **Timestamp**: 2026-09-17T21:40:45+05:30
+- **User Prompt**:
+  > "INFO: 127.0.0.1:55731 - "GET /api/v1/api/v1/projects/.../concepts HTTP/1.1" 404 Not Found ... And also tell me do the past chats do not saved and also resolve this error"
+- **Work Done**:
+  1. **Fixed Duplicate `/api/v1/api/v1/` 404 Error**:
+     - Diagnosed that `API_URL` already contained `/api/v1`, but page calls in `quiz/page.tsx` and `growth/page.tsx` prepended `/api/v1` again, producing `404 Not Found`.
+     - Sanitized `request()` in `frontend/lib/api.ts` to automatically strip redundant `/api/v1` prefixes.
+     - Cleaned up endpoint strings in `quiz/page.tsx` and `growth/page.tsx`.
+  2. **Enabled Chat History & Session Persistence in AI Tutor UI**:
+     - Explained that past messages are saved in Postgres (`tutor_sessions` and `tutor_messages` tables), but the UI was previously starting with an empty message state upon page reload.
+     - Added automatic session loading on mount via `/projects/{id}/tutor/sessions`.
+     - Added a "💬 Chat History" drawer in the right context sidebar to switch between previous sessions.
+     - Added a "➕ New Chat" button to seamlessly start a fresh conversation session.
+  3. **Verified Production Build**: `npm run build` compiled with 0 errors.
+
+
 
 

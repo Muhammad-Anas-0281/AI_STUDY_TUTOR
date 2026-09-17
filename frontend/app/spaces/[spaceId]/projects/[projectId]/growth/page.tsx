@@ -118,9 +118,9 @@ export default function GrowthAnalyticsPage() {
     setLoading(true);
     try {
       const [growthRes, recsRes, eventsRes] = await Promise.all([
-        api.get(`/api/v1/projects/${projectId}/growth`),
-        api.get(`/api/v1/projects/${projectId}/recommendations`),
-        api.get(`/api/v1/projects/${projectId}/events`),
+        api.get(`/projects/${projectId}/growth`),
+        api.get(`/projects/${projectId}/recommendations`),
+        api.get(`/projects/${projectId}/events`),
       ]);
       setMetrics(growthRes.data);
       setRecommendations(recsRes.data);
@@ -137,7 +137,7 @@ export default function GrowthAnalyticsPage() {
     setGeneratingRecs(true);
     setErrorMessage(null);
     try {
-      const res = await api.post(`/api/v1/projects/${projectId}/recommendations/generate`);
+      const res = await api.post(`/projects/${projectId}/recommendations/generate`);
       setRecommendations(res.data);
     } catch (err: any) {
       setErrorMessage(err.response?.data?.detail || "Failed to generate recommendations.");
@@ -148,7 +148,7 @@ export default function GrowthAnalyticsPage() {
 
   const handleUpdateRecStatus = async (recId: string, status: "completed" | "dismissed") => {
     try {
-      await api.patch(`/api/v1/projects/${projectId}/recommendations/${recId}/status`, { status });
+      await api.patch(`/projects/${projectId}/recommendations/${recId}/status`, { status });
       setRecommendations((prev) =>
         prev.map((r) => (r.id === recId ? { ...r, status } : r))
       );

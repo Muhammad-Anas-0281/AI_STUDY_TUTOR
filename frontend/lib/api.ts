@@ -60,7 +60,13 @@ class ApiClient {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    // Sanitize endpoint to avoid duplicate /api/v1 prefix
+    let cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+    if (cleanEndpoint.startsWith("/api/v1/")) {
+      cleanEndpoint = cleanEndpoint.replace("/api/v1", "");
+    }
+
+    const response = await fetch(`${API_URL}${cleanEndpoint}`, {
       ...options,
       headers,
     });

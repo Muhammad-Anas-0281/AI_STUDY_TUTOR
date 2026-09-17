@@ -47,6 +47,8 @@ export default function TutorPage() {
   const { user, loading: authLoading } = useAuth();
   const [project, setProject] = useState<Project | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [inputQuestion, setInputQuestion] = useState("");
   const [loading, setLoading] = useState(true);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -69,13 +71,38 @@ export default function TutorPage() {
     }
   };
 
+  const loadSessions = async (keepCurrentActive = true) => {
+    try {
+      const res = await api.get(`/projects/${projectId}/tutor/sessions`);
+      const sessionList = res.data || [];
+      setSessions(sessionList);
+      if (sessionList.length > 0 && !keepCurrentActive) {
+        setActiveSessionId(sessionList[0].id);
+        setMessages(sessionList[0].messages || []);
+      }
+    } catch (err) {
+      console.error("Failed to load tutor sessions:", err);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
     } else if (user && projectId) {
       loadProject();
+      loadSessions(false);
     }
   }, [user, authLoading, projectId]);
+
+  const selectSession = (sess: any) => {
+    setActiveSessionId(sess.id);
+    setMessages(sess.messages || []);
+  };
+
+  const startNewSession = () => {
+    setActiveSessionId(null);
+    setMessages([]);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -125,7 +152,10 @@ export default function TutorPage() {
             "Content-Type": "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({ question: questionText.trim() }),
+          body: JSON.stringify({
+            question: questionText.trim(),
+            session_id: activeSessionId || undefined,
+          }),
         }
       );
 
@@ -184,12 +214,16 @@ export default function TutorPage() {
         const updated = [...prev];
         const lastIdx = updated.length - 1;
         if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
-          updated[lastIdx].content = "⚠️ Connection error. Please check your network and try again.";
+          updated[lastIdx] = {
+            ...updated[lastIdx],
+            content: "⚠️ Connection error. Please check your network and try again.",
+          };
         }
         return updated;
       });
     } finally {
       setIsStreaming(false);
+      loadSessions(true);
     }
   };
 
@@ -242,14 +276,16 @@ export default function TutorPage() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setMessages([])}
-          className="gap-1.5 text-xs text-slate-400"
-        >
-          <RotateCcw className="w-3.5 h-3.5" /> Clear Session
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startNewSession}
+            className="gap-1.5 text-xs border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/40"
+          >
+            <RotateCcw className="w-3.5 h-3.5" /> ➕ New Chat
+          </Button>
+        </div>
       </div>
 
       {/* Two-Pane Workspace */}
@@ -401,8 +437,50 @@ export default function TutorPage() {
           </div>
         </div>
 
-        {/* Right 1 Column: Project Context Rail */}
-        <div className="space-y-4">
+        {/* Right 1 Column: Sessions & Project Context Rail */}
+        <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-220px)]">
+          {/* Past Sessions List */}
+          <Card className="p-4 space-y-3 bg-[#0f172a] border-[#1e293b]">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-indigo-400" />
+                Chat History
+              </span>
+              <button
+                onClick={startNewSession}
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
+              >
+                + New
+              </button>
+            </div>
+            {sessions.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">No past sessions yet.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                {sessions.map((s) => {
+                  const isActive = s.id === activeSessionId;
+                  const firstUserMsg = s.messages?.find((m: any) => m.role === "user")?.content || s.title || "Study Session";
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => selectSession(s)}
+                      className={`w-full text-left p-2 rounded-xl text-xs transition-all border block ${
+                        isActive
+                          ? "bg-indigo-600/20 border-indigo-500/50 text-white font-medium"
+                          : "bg-[#090d16] border-[#1e293b] text-slate-400 hover:text-slate-200 hover:border-slate-700"
+                      }`}
+                    >
+                      <p className="truncate text-[11px]">{firstUserMsg}</p>
+                      <span className="text-[10px] text-slate-500 block pt-0.5">
+                        {s.messages?.length || 0} messages
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
           <Card className="p-4 space-y-3">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-indigo-400" />
@@ -437,10 +515,16 @@ export default function TutorPage() {
             </span>
             <div className="space-y-2">
               <Link
-                href={`/spaces/${spaceId}/projects/${projectId}/materials`}
+                href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
                 className="w-full text-left text-xs bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] p-2.5 rounded-xl text-slate-300 block transition-colors"
               >
-                📚 Manage Materials
+                🎯 Take Adaptive Quiz
+              </Link>
+              <Link
+                href={`/spaces/${spaceId}/projects/${projectId}/growth`}
+                className="w-full text-left text-xs bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] p-2.5 rounded-xl text-slate-300 block transition-colors"
+              >
+                📊 View Growth & Analytics
               </Link>
             </div>
           </Card>

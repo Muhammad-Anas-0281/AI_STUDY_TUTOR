@@ -128,7 +128,7 @@ export default function QuizAssessmentPage() {
 
   const fetchConcepts = async () => {
     try {
-      const res = await api.get(`/api/v1/projects/${projectId}/concepts`);
+      const res = await api.get(`/projects/${projectId}/concepts`);
       setConcepts(res.data);
     } catch (err: any) {
       console.error("Failed to load concepts:", err);
@@ -137,7 +137,7 @@ export default function QuizAssessmentPage() {
 
   const fetchHistory = async () => {
     try {
-      const res = await api.get(`/api/v1/projects/${projectId}/quiz/history`);
+      const res = await api.get(`/projects/${projectId}/quiz/history`);
       setHistory(res.data);
     } catch (err: any) {
       console.error("Failed to load history:", err);
@@ -148,7 +148,7 @@ export default function QuizAssessmentPage() {
     setLoadingData(true);
     setErrorMessage(null);
     try {
-      const res = await api.post(`/api/v1/projects/${projectId}/concepts/extract?force=true`);
+      const res = await api.post(`/projects/${projectId}/concepts/extract?force=true`);
       setConcepts(res.data);
     } catch (err: any) {
       setErrorMessage(err.response?.data?.detail || "Failed to extract concepts from materials.");
@@ -161,7 +161,7 @@ export default function QuizAssessmentPage() {
     setQuizState("generating");
     setErrorMessage(null);
     try {
-      const res = await api.post(`/api/v1/projects/${projectId}/quiz/generate`, {
+      const res = await api.post(`/projects/${projectId}/quiz/generate`, {
         num_questions: numQuestions,
         difficulty: difficulty,
       });
@@ -199,7 +199,7 @@ export default function QuizAssessmentPage() {
 
     try {
       const res = await api.post(
-        `/api/v1/projects/${projectId}/quiz/${currentAttemptId}/submit`,
+        `/projects/${projectId}/quiz/${currentAttemptId}/submit`,
         submissionPayload
       );
       setQuizResult(res.data);

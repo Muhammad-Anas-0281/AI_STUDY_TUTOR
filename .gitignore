@@ -1,0 +1,35 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Python Virtual Environment & Bytecode
+.venv/
+venv/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+
+# Node.js & Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Uploaded materials & temp data
+backend/uploads/
+uploads/
+*.pdf
+*.log
+scratch/
+.DS_Store
+Thumbs.db

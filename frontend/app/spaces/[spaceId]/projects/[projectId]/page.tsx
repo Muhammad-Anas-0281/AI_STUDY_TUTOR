@@ -189,12 +189,17 @@ export default function ProjectDashboardPage() {
           </Link>
 
           {/* Growth & Analytics */}
-          <div className="group bg-[#0f172a] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-indigo-500/5 flex flex-col justify-between">
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/growth`}
+            className="group bg-[#0f172a] border border-[#1e293b] hover:border-violet-500/40 rounded-2xl p-6 transition-all hover:shadow-xl hover:shadow-violet-500/5 flex flex-col justify-between"
+          >
             <div>
               <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
                 <TrendingUp className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-lg text-white">Growth & Insights</h3>
+              <h3 className="font-semibold text-lg text-white group-hover:text-violet-300 transition-colors">
+                Growth & Insights
+              </h3>
               <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">
                 Mastery trends, weakness detection, and tailored next-step recommendations.
               </p>
@@ -205,7 +210,7 @@ export default function ProjectDashboardPage() {
                 View Growth <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
     </div>

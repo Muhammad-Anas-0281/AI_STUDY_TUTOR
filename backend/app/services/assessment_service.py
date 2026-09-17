@@ -405,6 +405,22 @@ class AssessmentService:
 
         await db.commit()
 
+        # Log Learning Event
+        from app.services.event_service import event_service
+        await event_service.log_event(
+            db=db,
+            user_id="learner",
+            event_type="quiz_completed",
+            project_id=project_id,
+            payload={
+                "attempt_id": attempt.id,
+                "score": final_percentage,
+                "correct_count": correct_count,
+                "total_questions": total_q_count,
+            },
+            idempotency_key=f"quiz_complete_{attempt.id}"
+        )
+
         return QuizResultResponse(
             attempt_id=attempt.id,
             project_id=attempt.project_id,

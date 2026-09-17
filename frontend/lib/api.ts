@@ -211,6 +211,15 @@ class ApiClient {
     return { data };
   }
 
+  async patch<T = any>(endpoint: string, body?: any, options: RequestInit = {}): Promise<{ data: T }> {
+    const data = await this.request<T>(endpoint, {
+      ...options,
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return { data };
+  }
+
   async delete<T = any>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const data = await this.request<T>(endpoint, { ...options, method: "DELETE" });
     return { data };

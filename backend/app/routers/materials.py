@@ -58,6 +58,16 @@ async def upload_document(
     await db.commit()
     await db.refresh(document)
 
+    # Log learning event
+    from app.services.event_service import event_service
+    await event_service.log_event(
+        db=db,
+        user_id=current_user.id,
+        event_type="material_uploaded",
+        project_id=project_id,
+        payload={"filename": file.filename, "document_id": document.id},
+    )
+
     # Trigger background worker for extraction, chunking, and vector indexing
     background_tasks.add_task(run_document_processing_job, document.id)
 

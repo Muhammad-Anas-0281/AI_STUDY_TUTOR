@@ -245,7 +245,38 @@ This document records the user prompts, actions performed, timestamps, and corre
   3. **Verification**:
      - Ran `test_phase3_quiz.py` verifying concept extraction, adaptive quiz generation, MCQ grading, AI open-ended rubric evaluation, and mastery deltas (100% pass).
 
+---
 
+### Entry 15
+- **Phase**: Phase 5 — Admin Dashboard & System Observability
+- **Timestamp**: 2026-09-17T22:12:00+05:30
+- **User Prompt**:
+  > "ok go to the phase 5"
+- **Work Done**:
+  1. **Admin Schemas & Observability Contracts** (`backend/app/schemas/admin.py`):
+     - Defined `AdminPlatformStats` (aggregate counts of users, spaces, projects, documents, chunks, quizzes taken, learning events, AI requests).
+     - Defined `AdminUserItem` & `AdminUserDetail` (user profiles, space counts, recent learning telemetry).
+     - Defined `AIUsageSummary` & `AIUsageLog` (token consumption, latency percentiles, error rates, model/provider breakdowns, cost tracking).
+     - Defined `BackgroundJobItem` (job ledger for background tasks) and `SystemHealthResponse` (Postgres, pgvector, Redis latency checks).
+  2. **Admin & Telemetry Service** (`backend/app/services/admin_service.py`):
+     - Implemented `get_platform_stats` aggregating counts across all system entities.
+     - Implemented `get_all_users` and `get_user_detail` with drill-down metrics.
+     - Implemented `get_ai_usage_summary` computing live success rates, token sums, feature breakdowns, and recent execution logs.
+     - Implemented `get_background_jobs` and `retry_job`.
+     - Implemented `get_system_health` performing real-time health checks on Supabase PostgreSQL (measuring roundtrip latency), `pgvector` extension status, and Redis cache.
+  3. **Admin Router** (`backend/app/routers/admin.py`):
+     - Implemented and secured admin routes: `GET /api/v1/admin/stats`, `GET /api/v1/admin/users`, `GET /api/v1/admin/users/{id}`, `GET /api/v1/admin/ai-usage`, `GET /api/v1/admin/jobs`, `POST /api/v1/admin/jobs/{id}/retry`, `GET /api/v1/admin/system-health`.
+     - Registered `admin.router` in `backend/app/main.py`.
+  4. **Interactive Next.js Admin Dashboard** (`frontend/app/admin/page.tsx`):
+     - Built a tabbed command center with 5 views:
+       1. **Platform Overview**: Real-time counter cards and service status cards.
+       2. **User Directory**: Searchable table of registered learners with drill-down inspection.
+       3. **AI Observability**: Token metrics, latency graphs, provider breakdown, and filterable live inference logs.
+       4. **Background Jobs Ledger**: Task retry buttons, status badges, and failure diagnostics.
+       5. **System Health**: Roundtrip latency metrics for PostgreSQL, pgvector 384-dim indexing, and Redis.
+     - Added Admin link in `frontend/components/Navbar.tsx`.
+  5. **Verification & Testing**:
+     - Automated backend test `backend/test_phase5_admin.py` passed 100%.
+     - Next.js production build (`npm run build`) completed successfully with 0 errors.
 
-
-
+---

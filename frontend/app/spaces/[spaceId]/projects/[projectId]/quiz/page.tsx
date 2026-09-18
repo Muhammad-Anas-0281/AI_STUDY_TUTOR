@@ -26,7 +26,18 @@ import {
   ListChecks,
   Check,
   RotateCcw,
+  MessageSquare,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Cell,
+} from "recharts";
 
 interface QuestionItem {
   id: string;
@@ -629,48 +640,126 @@ export default function QuizAssessmentPage() {
                   </div>
                 </Card>
 
-                {/* Mastery Deltas Grid */}
+                {/* Mastery Deltas — Visual Chart + Per-Concept Cards */}
                 {quizResult.mastery_deltas.length > 0 && (
                   <Card className="border-slate-800 bg-slate-900/60 shadow-xl">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-sm font-bold text-slate-200 flex items-center gap-2">
                         <TrendingUp className="w-4 h-4 text-emerald-400" />
-                        Mastery Score Deltas
+                        Concept Mastery After This Quiz
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {quizResult.mastery_deltas.map((delta) => (
-                          <div
-                            key={delta.concept_id}
-                            className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 flex flex-col justify-between gap-2"
+                    <CardContent className="space-y-5">
+                      {/* Bar chart of new_score per concept */}
+                      <div className="w-full h-44">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={quizResult.mastery_deltas.map((d) => ({
+                              name: d.concept_name.length > 14 ? d.concept_name.slice(0, 14) + "…" : d.concept_name,
+                              fullName: d.concept_name,
+                              prev: parseFloat(d.old_score.toFixed(1)),
+                              now: parseFloat(d.new_score.toFixed(1)),
+                              delta: d.delta,
+                            }))}
+                            margin={{ top: 5, right: 10, left: -10, bottom: 5 }}
                           >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold text-xs text-slate-200 truncate max-w-[150px]">
-                                {delta.concept_name}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className={`text-[10px] font-mono ${
-                                  delta.delta > 0
-                                    ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
-                                    : delta.delta < 0
-                                    ? "border-red-500/40 text-red-400 bg-red-500/10"
-                                    : "border-slate-700 text-slate-400"
-                                }`}
-                              >
-                                {delta.delta > 0 ? `+${delta.delta}%` : `${delta.delta}%`}
-                              </Badge>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                            <XAxis
+                              dataKey="name"
+                              tick={{ fontSize: 10, fill: "#94a3b8" }}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              domain={[0, 100]}
+                              tick={{ fontSize: 10, fill: "#64748b" }}
+                              axisLine={false}
+                              tickLine={false}
+                              tickFormatter={(v) => `${v}%`}
+                            />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload?.length) return null;
+                                const d = payload[0]?.payload;
+                                return (
+                                  <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs shadow-xl">
+                                    <p className="font-bold text-slate-200 mb-1">{d.fullName}</p>
+                                    <p className="text-slate-400">Before: <span className="text-slate-200 font-mono">{d.prev}%</span></p>
+                                    <p className="text-slate-400">After: <span className="text-indigo-300 font-mono font-bold">{d.now}%</span></p>
+                                    <p className={`font-mono font-bold ${d.delta > 0 ? "text-emerald-400" : d.delta < 0 ? "text-red-400" : "text-slate-500"}`}>
+                                      {d.delta > 0 ? `+${d.delta}` : d.delta} pts
+                                    </p>
+                                  </div>
+                                );
+                              }}
+                            />
+                            <Bar dataKey="prev" name="Before" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={20} />
+                            <Bar dataKey="now" name="After" radius={[4, 4, 0, 0]} barSize={20}>
+                              {quizResult.mastery_deltas.map((d, i) => (
+                                <Cell
+                                  key={i}
+                                  fill={d.new_score >= 80 ? "#10b981" : d.new_score >= 50 ? "#6366f1" : "#f59e0b"}
+                                />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex items-center gap-4 text-[10px] text-slate-500">
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-[#1e293b] inline-block" /> Before</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500 inline-block" /> Mastered ≥80%</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-indigo-500 inline-block" /> Practicing 50–79%</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-amber-500 inline-block" /> Needs Work &lt;50%</span>
+                      </div>
+
+                      {/* Per-concept delta cards */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                        {quizResult.mastery_deltas.map((delta) => {
+                          const improved = delta.delta > 0;
+                          const declined = delta.delta < 0;
+                          return (
+                            <div
+                              key={delta.concept_id}
+                              className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3"
+                            >
+                              <div className="flex items-start justify-between gap-1">
+                                <span className="font-semibold text-xs text-slate-200 leading-snug">{delta.concept_name}</span>
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] font-mono shrink-0 ${
+                                    improved
+                                      ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+                                      : declined
+                                      ? "border-red-500/40 text-red-400 bg-red-500/10"
+                                      : "border-slate-700 text-slate-400"
+                                  }`}
+                                >
+                                  {improved ? `+${delta.delta}` : `${delta.delta}`} pts
+                                </Badge>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px] text-slate-400">
+                                  <span>{delta.old_score.toFixed(0)}% → <strong className="text-white">{delta.new_score.toFixed(0)}%</strong></span>
+                                  <span className="uppercase font-mono text-[10px] text-slate-500">{delta.status}</span>
+                                </div>
+                                <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden">
+                                  {/* Old score bar (grey) */}
+                                  <div
+                                    className="absolute left-0 top-0 h-full bg-slate-600 rounded-full transition-all"
+                                    style={{ width: `${delta.old_score}%` }}
+                                  />
+                                  {/* New score bar (colored) */}
+                                  <div
+                                    className={`absolute left-0 top-0 h-full rounded-full transition-all ${
+                                      delta.new_score >= 80 ? "bg-emerald-500" : delta.new_score >= 50 ? "bg-indigo-500" : "bg-amber-500"
+                                    }`}
+                                    style={{ width: `${delta.new_score}%`, opacity: 0.75 }}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex items-baseline justify-between text-xs text-slate-400">
-                              <span>
-                                {delta.old_score.toFixed(0)}% → <strong className="text-slate-100">{delta.new_score.toFixed(0)}%</strong>
-                              </span>
-                              <span className="text-[10px] uppercase font-mono text-slate-500">{delta.status}</span>
-                            </div>
-                            <Progress value={delta.new_score} className="h-1.5 bg-slate-800" />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </CardContent>
                   </Card>

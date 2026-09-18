@@ -141,10 +141,15 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const ADMIN_EMAIL = "smdanas0281@gmail.com";
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login");
-    } else if (user) {
+    } else if (user && user.email !== ADMIN_EMAIL) {
+      // Non-admin users are redirected immediately
+      router.push("/spaces");
+    } else if (user && user.email === ADMIN_EMAIL) {
       loadAllAdminData();
     }
   }, [user, authLoading]);

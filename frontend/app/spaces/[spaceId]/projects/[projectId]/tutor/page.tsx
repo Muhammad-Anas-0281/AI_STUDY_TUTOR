@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { api, Project } from "@/lib/api";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   MessageSquare,
   Sparkles,
@@ -15,11 +17,12 @@ import {
   Target,
   AlertTriangle,
   FileText,
-  HelpCircle,
   RotateCcw,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Brain,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -216,7 +219,7 @@ export default function TutorPage() {
         if (lastIdx >= 0 && updated[lastIdx].role === "assistant") {
           updated[lastIdx] = {
             ...updated[lastIdx],
-            content: "⚠️ Connection error. Please check your network and try again.",
+            content: "Connection error. Please check your network and try again.",
           };
         }
         return updated;
@@ -250,7 +253,7 @@ export default function TutorPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Navigation Strip */}
       <div className="flex items-center justify-between border-b border-[#1e293b] pb-4">
         <div className="flex items-center gap-3">
@@ -261,59 +264,66 @@ export default function TutorPage() {
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-indigo-400" />
-                AI Tutor: {project?.name}
-              </h1>
-              <Badge variant="default" className="text-[10px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
-                Grounded RAG Active
-              </Badge>
-            </div>
-            <p className="text-xs text-slate-400">
-              Answers are strictly grounded in your uploaded project materials with page-level citations.
+            <h1 className="text-lg font-bold text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-400" />
+              AI Tutor
+              {project?.name && (
+                <span className="text-slate-400 font-normal text-base">— {project.name}</span>
+              )}
+            </h1>
+            <p className="text-xs text-slate-500">
+              Ask questions grounded in your uploaded study materials
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors shadow-md shadow-violet-500/20"
+          >
+            <Brain className="w-3.5 h-3.5" />
+            Take Quiz
+          </Link>
           <Button
             variant="outline"
             size="sm"
             onClick={startNewSession}
-            className="gap-1.5 text-xs border-indigo-500/30 text-indigo-300 hover:bg-indigo-950/40"
+            className="gap-1.5 text-xs border-[#1e293b] text-slate-300 hover:bg-[#1e293b]"
           >
-            <RotateCcw className="w-3.5 h-3.5" /> ➕ New Chat
+            <RotateCcw className="w-3.5 h-3.5" /> New Chat
           </Button>
         </div>
       </div>
 
       {/* Two-Pane Workspace */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-220px)] min-h-[550px]">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-5 h-[calc(100vh-210px)] min-h-[580px]">
         {/* Left 3 Columns: Chat Thread & Input */}
-        <div className="lg:col-span-3 flex flex-col bg-[#0f172a] border border-[#1e293b] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="lg:col-span-3 flex flex-col bg-[#0b1120] border border-[#1e293b] rounded-2xl overflow-hidden shadow-2xl">
           {/* Messages Stream Container */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-5 space-y-6 scroll-smooth">
             {messages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto space-y-4">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+              <div className="h-full flex flex-col items-center justify-center text-center p-8 max-w-sm mx-auto space-y-5">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
                   <Sparkles className="w-7 h-7" />
                 </div>
-                <h2 className="text-base font-bold text-white">Ask your AI Study Companion</h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Ask any question about your uploaded materials. The AI Tutor retrieves relevant pages, cites its sources, and avoids fabricating unverified information.
-                </p>
+                <div>
+                  <h2 className="text-base font-bold text-white mb-1">Ask your AI Study Companion</h2>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Your questions are answered strictly from your uploaded project materials — no hallucinations, full source citations.
+                  </p>
+                </div>
 
                 {/* Quick Prompts */}
-                <div className="grid grid-cols-1 gap-2 w-full pt-4 text-left">
+                <div className="grid grid-cols-1 gap-2 w-full text-left">
                   {suggestedQuestions.map((q, i) => (
                     <button
                       key={i}
                       onClick={() => handleSendMessage(q)}
-                      className="text-xs bg-[#090d16] hover:bg-indigo-950/40 border border-[#1e293b] hover:border-indigo-500/40 p-2.5 rounded-xl text-slate-300 hover:text-white transition-all text-left flex items-center justify-between group"
+                      className="text-xs bg-[#0f172a] hover:bg-indigo-950/40 border border-[#1e293b] hover:border-indigo-500/40 p-3 rounded-xl text-slate-300 hover:text-white transition-all text-left flex items-center justify-between group"
                     >
                       <span>{q}</span>
-                      <span className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">➔</span>
+                      <span className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity text-base">→</span>
                     </button>
                   ))}
                 </div>
@@ -322,7 +332,7 @@ export default function TutorPage() {
               messages.map((msg, idx) => (
                 <div
                   key={msg.id || idx}
-                  className={`flex gap-3.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   {msg.role === "assistant" && (
                     <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-500/20 mt-1">
@@ -330,29 +340,52 @@ export default function TutorPage() {
                     </div>
                   )}
 
-                  <div className={`max-w-[85%] space-y-2`}>
+                  <div className="max-w-[87%] space-y-2">
                     {/* Message Bubble */}
-                    <div
-                      className={`p-4 rounded-2xl text-sm leading-relaxed ${
-                        msg.role === "user"
-                          ? "bg-indigo-600 text-white rounded-br-none shadow-lg shadow-indigo-600/10"
-                          : "bg-[#090d16] border border-[#1e293b] text-slate-200 rounded-tl-none whitespace-pre-wrap"
-                      }`}
-                    >
-                      {msg.content || (
-                        <span className="inline-flex items-center gap-1.5 text-slate-400 italic">
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Retrieving project context...
-                        </span>
-                      )}
-                    </div>
+                    {msg.role === "user" ? (
+                      <div className="px-4 py-3 rounded-2xl rounded-br-none bg-indigo-600 text-white text-sm shadow-lg shadow-indigo-600/20">
+                        {msg.content}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-4 rounded-2xl rounded-tl-none bg-[#0f172a] border border-[#1e293b] text-slate-200 text-sm">
+                        {msg.content ? (
+                          <div className="prose prose-invert prose-sm max-w-none
+                            prose-headings:text-white prose-headings:font-bold prose-headings:mb-2 prose-headings:mt-4
+                            prose-h1:text-lg prose-h2:text-base prose-h3:text-sm prose-h3:text-indigo-300
+                            prose-p:text-slate-200 prose-p:leading-relaxed prose-p:mb-3
+                            prose-strong:text-white prose-strong:font-semibold
+                            prose-em:text-slate-300 prose-em:italic
+                            prose-code:bg-[#1e293b] prose-code:text-violet-300 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-code:font-mono
+                            prose-pre:bg-[#1e293b] prose-pre:border prose-pre:border-[#334155] prose-pre:rounded-xl prose-pre:p-4 prose-pre:overflow-x-auto
+                            prose-ul:text-slate-200 prose-ul:list-disc prose-ul:pl-5 prose-ul:space-y-1
+                            prose-ol:text-slate-200 prose-ol:list-decimal prose-ol:pl-5 prose-ol:space-y-1
+                            prose-li:text-slate-200 prose-li:leading-relaxed
+                            prose-blockquote:border-l-4 prose-blockquote:border-indigo-500 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-slate-400
+                            prose-table:border-collapse prose-table:w-full
+                            prose-th:bg-[#1e293b] prose-th:p-2 prose-th:text-left prose-th:text-xs prose-th:text-slate-300 prose-th:font-semibold prose-th:border prose-th:border-[#334155]
+                            prose-td:p-2 prose-td:text-xs prose-td:border prose-td:border-[#1e293b] prose-td:text-slate-300
+                            prose-a:text-indigo-400 prose-a:underline prose-a:hover:text-indigo-300
+                            prose-hr:border-[#1e293b]">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 text-slate-400 italic text-xs">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Retrieving project context and composing answer...
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Insufficient Evidence Warning Banner */}
                     {msg.role === "assistant" && msg.insufficient_evidence && (
                       <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-2.5 text-xs text-amber-300">
                         <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                         <div>
-                          <span className="font-semibold text-amber-200 block">Insufficient Project Evidence</span>
-                          The uploaded documents for this project do not contain sufficient verified data to answer this query reliably. The Tutor refuses to invent information.
+                          <span className="font-semibold text-amber-200 block">Insufficient Evidence in Project Materials</span>
+                          The uploaded documents do not contain enough verified data for this query. The Tutor refuses to fabricate information.
                         </div>
                       </div>
                     )}
@@ -362,11 +395,11 @@ export default function TutorPage() {
                       <div className="border border-[#1e293b] bg-[#090d16]/80 rounded-xl overflow-hidden">
                         <button
                           onClick={() => toggleSources(msg.id)}
-                          className="w-full px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-indigo-300 flex items-center justify-between transition-colors"
+                          className="w-full px-3 py-2 text-xs font-medium text-slate-400 hover:text-indigo-300 flex items-center justify-between transition-colors"
                         >
                           <span className="flex items-center gap-1.5">
                             <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
-                            Supporting Sources ({msg.citations.length})
+                            {msg.citations.length} source{msg.citations.length !== 1 ? "s" : ""} cited
                           </span>
                           {expandedSources[msg.id] ? (
                             <ChevronUp className="w-3.5 h-3.5" />
@@ -380,13 +413,13 @@ export default function TutorPage() {
                             {msg.citations.map((c, cIdx) => (
                               <div
                                 key={cIdx}
-                                className="flex items-center justify-between text-[11px] bg-[#0f172a] border border-[#1e293b] px-2.5 py-1.5 rounded-lg"
+                                className="flex items-center justify-between text-[11px] bg-[#0f172a] border border-[#1e293b] px-3 py-2 rounded-lg"
                               >
-                                <span className="text-white font-medium truncate max-w-[200px]">
+                                <span className="text-slate-200 font-medium truncate max-w-[200px]">
                                   {c.filename}
                                 </span>
-                                <Badge variant="secondary" className="text-[10px]">
-                                  Page {c.page_number} • {(c.similarity * 100).toFixed(0)}% match
+                                <Badge variant="secondary" className="text-[10px] bg-indigo-500/10 text-indigo-300 border-indigo-500/20">
+                                  Pg {c.page_number} · {(c.similarity * 100).toFixed(0)}% match
                                 </Badge>
                               </div>
                             ))}
@@ -402,7 +435,7 @@ export default function TutorPage() {
           </div>
 
           {/* Chat Input Bar */}
-          <div className="p-4 border-t border-[#1e293b] bg-[#090d16]">
+          <div className="p-4 border-t border-[#1e293b] bg-[#070b14]">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -415,21 +448,21 @@ export default function TutorPage() {
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask your AI Tutor a question (Shift+Enter for newline)..."
+                placeholder="Ask anything about your study materials... (Enter to send, Shift+Enter for newline)"
                 rows={1}
-                className="flex-1 min-h-[44px] max-h-32 py-2.5 px-3.5 text-sm"
+                className="flex-1 min-h-[44px] max-h-36 py-3 px-4 text-sm bg-[#0f172a] border-[#1e293b] resize-none rounded-xl focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/30"
               />
               <Button
                 type="submit"
                 disabled={isStreaming || !inputQuestion.trim()}
-                className="h-11 px-4 gap-1.5 shrink-0"
+                className="h-11 px-5 gap-1.5 shrink-0 bg-indigo-600 hover:bg-indigo-500 rounded-xl"
               >
                 {isStreaming ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
                     <Send className="w-4 h-4" />
-                    <span className="hidden sm:inline">Ask</span>
+                    <span className="hidden sm:inline text-sm font-semibold">Ask</span>
                   </>
                 )}
               </Button>
@@ -437,9 +470,38 @@ export default function TutorPage() {
           </div>
         </div>
 
-        {/* Right 1 Column: Sessions & Project Context Rail */}
-        <div className="space-y-4 overflow-y-auto max-h-[calc(100vh-220px)]">
-          {/* Past Sessions List */}
+        {/* Right Sidebar */}
+        <div className="space-y-3.5 overflow-y-auto max-h-[calc(100vh-210px)]">
+          {/* Quick Quiz CTA */}
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
+            className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-700 border border-violet-500/30 hover:from-violet-500 hover:to-indigo-600 transition-all shadow-lg shadow-violet-500/20 group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+              <Brain className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Take Adaptive Quiz</p>
+              <p className="text-[11px] text-violet-200">Test your understanding now</p>
+            </div>
+            <Zap className="w-4 h-4 text-violet-200 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Link>
+
+          {/* Growth CTA */}
+          <Link
+            href={`/spaces/${spaceId}/projects/${projectId}/growth`}
+            className="flex items-center gap-3 p-4 rounded-2xl bg-[#0f172a] border border-[#1e293b] hover:border-emerald-500/40 hover:bg-emerald-950/20 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Growth & Analytics</p>
+              <p className="text-[11px] text-slate-500">View your mastery progress</p>
+            </div>
+          </Link>
+
+          {/* Past Sessions */}
           <Card className="p-4 space-y-3 bg-[#0f172a] border-[#1e293b]">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -448,15 +510,15 @@ export default function TutorPage() {
               </span>
               <button
                 onClick={startNewSession}
-                className="text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
+                className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold transition-colors"
               >
                 + New
               </button>
             </div>
             {sessions.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">No past sessions yet.</p>
+              <p className="text-xs text-slate-600 italic">No past sessions yet.</p>
             ) : (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+              <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
                 {sessions.map((s) => {
                   const isActive = s.id === activeSessionId;
                   const firstUserMsg = s.messages?.find((m: any) => m.role === "user")?.content || s.title || "Study Session";
@@ -464,14 +526,14 @@ export default function TutorPage() {
                     <button
                       key={s.id}
                       onClick={() => selectSession(s)}
-                      className={`w-full text-left p-2 rounded-xl text-xs transition-all border block ${
+                      className={`w-full text-left p-2.5 rounded-xl text-xs transition-all border block ${
                         isActive
-                          ? "bg-indigo-600/20 border-indigo-500/50 text-white font-medium"
+                          ? "bg-indigo-600/20 border-indigo-500/40 text-white font-medium"
                           : "bg-[#090d16] border-[#1e293b] text-slate-400 hover:text-slate-200 hover:border-slate-700"
                       }`}
                     >
                       <p className="truncate text-[11px]">{firstUserMsg}</p>
-                      <span className="text-[10px] text-slate-500 block pt-0.5">
+                      <span className="text-[10px] text-slate-600 block pt-0.5">
                         {s.messages?.length || 0} messages
                       </span>
                     </button>
@@ -481,52 +543,35 @@ export default function TutorPage() {
             )}
           </Card>
 
-          <Card className="p-4 space-y-3">
+          {/* Learning Goal */}
+          <Card className="p-4 space-y-2 bg-[#0f172a] border-[#1e293b]">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <Target className="w-3.5 h-3.5 text-indigo-400" />
               Learning Goal
             </span>
-            <p className="text-xs text-slate-200 leading-relaxed">
+            <p className="text-xs text-slate-300 leading-relaxed">
               {project?.goal || "Master concepts from your uploaded study materials."}
             </p>
           </Card>
 
-          <Card className="p-4 space-y-3">
+          {/* Indexed Documents */}
+          <Card className="p-4 space-y-2 bg-[#0f172a] border-[#1e293b]">
             <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-blue-400" />
-              Indexed Documents
+              Indexed Materials
             </span>
             <div className="flex items-center justify-between text-xs text-slate-300">
-              <span>Total Materials</span>
-              <Badge variant="secondary">{project?.document_count || 0} files</Badge>
+              <span>Documents indexed</span>
+              <Badge variant="secondary" className="text-[10px] bg-blue-500/10 text-blue-300 border-blue-500/20">
+                {project?.document_count || 0} files
+              </Badge>
             </div>
             <Link
               href={`/spaces/${spaceId}/projects/${projectId}/materials`}
-              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium inline-block pt-1"
+              className="text-xs text-indigo-400 hover:text-indigo-300 font-medium inline-block pt-1 transition-colors"
             >
-              Upload more materials ➔
+              Upload more materials →
             </Link>
-          </Card>
-
-          <Card className="p-4 space-y-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              Suggested Actions
-            </span>
-            <div className="space-y-2">
-              <Link
-                href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
-                className="w-full text-left text-xs bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] p-2.5 rounded-xl text-slate-300 block transition-colors"
-              >
-                🎯 Take Adaptive Quiz
-              </Link>
-              <Link
-                href={`/spaces/${spaceId}/projects/${projectId}/growth`}
-                className="w-full text-left text-xs bg-[#090d16] hover:bg-[#1e293b] border border-[#1e293b] p-2.5 rounded-xl text-slate-300 block transition-colors"
-              >
-                📊 View Growth & Analytics
-              </Link>
-            </div>
           </Card>
         </div>
       </div>

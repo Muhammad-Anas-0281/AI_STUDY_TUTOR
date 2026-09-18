@@ -32,13 +32,15 @@ export const Navbar: React.FC = () => {
                 <Compass className="w-4 h-4 text-indigo-400" />
                 Spaces
               </Link>
-              <Link
-                href="/admin"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-[#1e293b] transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-violet-400" />
-                Admin
-              </Link>
+              {user?.email === "smdanas0281@gmail.com" && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-[#1e293b] transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-violet-400" />
+                  Admin
+                </Link>
+              )}
               <div className="h-4 w-[1px] bg-slate-800 mx-1" />
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-slate-300 bg-[#0f172a] border border-[#1e293b] px-3 py-1.5 rounded-full">

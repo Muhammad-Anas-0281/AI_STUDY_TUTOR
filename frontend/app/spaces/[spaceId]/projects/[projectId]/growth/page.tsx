@@ -31,7 +31,11 @@ import {
   BarChart2,
   Brain,
   ChevronRight,
+  Search,
+  SlidersHorizontal,
+  ArrowUpDown,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   LineChart,
   Line,
@@ -144,6 +148,9 @@ export default function GrowthAnalyticsPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [generatingRecs, setGeneratingRecs] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [conceptSearch, setConceptSearch] = useState<string>("");
+  const [conceptFilter, setConceptFilter] = useState<"all" | "weak" | "practicing" | "mastered">("all");
+  const [conceptSort, setConceptSort] = useState<"score_asc" | "score_desc" | "evidence" | "name">("score_asc");
 
   useEffect(() => {
     loadAllData();
@@ -547,6 +554,28 @@ export default function GrowthAnalyticsPage() {
             return { label: "Very low evidence", color: "text-red-400" };
           };
 
+          // Filter and sort concepts
+          const filteredConcepts = metrics.concepts
+            .filter((c) => {
+              if (conceptSearch.trim()) {
+                const q = conceptSearch.toLowerCase();
+                const matchName = c.name.toLowerCase().includes(q);
+                const matchDesc = (c.description || "").toLowerCase().includes(q);
+                if (!matchName && !matchDesc) return false;
+              }
+              if (conceptFilter === "weak") return c.score < 40;
+              if (conceptFilter === "practicing") return c.score >= 40 && c.score < 80;
+              if (conceptFilter === "mastered") return c.score >= 80;
+              return true;
+            })
+            .sort((a, b) => {
+              if (conceptSort === "score_asc") return a.score - b.score;
+              if (conceptSort === "score_desc") return b.score - a.score;
+              if (conceptSort === "evidence") return b.evidence_count - a.evidence_count;
+              if (conceptSort === "name") return a.name.localeCompare(b.name);
+              return 0;
+            });
+
           return (
             <div className="space-y-6">
               {/* Section header */}
@@ -578,17 +607,21 @@ export default function GrowthAnalyticsPage() {
               {/* ── Tier Distribution Summary Strip ── */}
               <div className="grid grid-cols-5 gap-2">
                 {[
-                  { label: "Mastered", count: mastered, color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400", dot: "bg-emerald-500" },
-                  { label: "Proficient", count: proficient, color: "bg-blue-500/10 border-blue-500/30 text-blue-400", dot: "bg-blue-500" },
-                  { label: "Practicing", count: practicing, color: "bg-indigo-500/10 border-indigo-500/30 text-indigo-400", dot: "bg-indigo-500" },
-                  { label: "Learning", count: learning, color: "bg-amber-500/10 border-amber-500/30 text-amber-400", dot: "bg-amber-500" },
-                  { label: "Struggling", count: struggling, color: "bg-red-500/10 border-red-500/30 text-red-400", dot: "bg-red-500" },
-                ].map(({ label, count, color, dot }) => (
-                  <div key={label} className={`flex flex-col items-center p-3 rounded-xl border ${color} text-center`}>
+                  { label: "Mastered", count: mastered, color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400", dot: "bg-emerald-500", filterKey: "mastered" as const },
+                  { label: "Proficient", count: proficient, color: "bg-blue-500/10 border-blue-500/30 text-blue-400", dot: "bg-blue-500", filterKey: "practicing" as const },
+                  { label: "Practicing", count: practicing, color: "bg-indigo-500/10 border-indigo-500/30 text-indigo-400", dot: "bg-indigo-500", filterKey: "practicing" as const },
+                  { label: "Learning", count: learning, color: "bg-amber-500/10 border-amber-500/30 text-amber-400", dot: "bg-amber-500", filterKey: "weak" as const },
+                  { label: "Struggling", count: struggling, color: "bg-red-500/10 border-red-500/30 text-red-400", dot: "bg-red-500", filterKey: "weak" as const },
+                ].map(({ label, count, color, dot, filterKey }) => (
+                  <button
+                    key={label}
+                    onClick={() => setConceptFilter(conceptFilter === filterKey ? "all" : filterKey)}
+                    className={`flex flex-col items-center p-3 rounded-xl border ${color} text-center transition hover:opacity-90 cursor-pointer`}
+                  >
                     <div className={`w-2 h-2 rounded-full ${dot} mb-1.5`} />
                     <span className="text-xl font-black">{count}</span>
                     <span className="text-[10px] font-medium mt-0.5 opacity-80">{label}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
 
@@ -606,6 +639,71 @@ export default function GrowthAnalyticsPage() {
                 </div>
               )}
 
+              {/* ── Search, Filter & Sort Toolbar ── */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                {/* Search input */}
+                <div className="relative w-full md:w-72">
+                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    value={conceptSearch}
+                    onChange={(e) => setConceptSearch(e.target.value)}
+                    placeholder="Search concepts or topics..."
+                    className="pl-9 h-9 bg-slate-950 border-slate-800 text-xs"
+                  />
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                  <button
+                    onClick={() => setConceptFilter("all")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 ${
+                      conceptFilter === "all" ? "bg-indigo-600 text-white shadow" : "text-slate-400 hover:text-slate-200 bg-slate-950"
+                    }`}
+                  >
+                    All ({metrics.concepts.length})
+                  </button>
+                  <button
+                    onClick={() => setConceptFilter("weak")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 flex items-center gap-1 ${
+                      conceptFilter === "weak" ? "bg-red-600 text-white shadow" : "text-red-400 hover:text-red-300 bg-red-500/10 border border-red-500/20"
+                    }`}
+                  >
+                    Needs Work ({struggling + learning})
+                  </button>
+                  <button
+                    onClick={() => setConceptFilter("practicing")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 ${
+                      conceptFilter === "practicing" ? "bg-blue-600 text-white shadow" : "text-blue-400 hover:text-blue-300 bg-blue-500/10 border border-blue-500/20"
+                    }`}
+                  >
+                    In Progress ({practicing + proficient})
+                  </button>
+                  <button
+                    onClick={() => setConceptFilter("mastered")}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition shrink-0 ${
+                      conceptFilter === "mastered" ? "bg-emerald-600 text-white shadow" : "text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 border border-emerald-500/20"
+                    }`}
+                  >
+                    Mastered ({mastered})
+                  </button>
+                </div>
+
+                {/* Sort dropdown */}
+                <div className="flex items-center gap-1.5 shrink-0 self-end md:self-center">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-slate-500" />
+                  <select
+                    value={conceptSort}
+                    onChange={(e: any) => setConceptSort(e.target.value)}
+                    className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="score_asc">Priority (Lowest First)</option>
+                    <option value="score_desc">Highest Mastery</option>
+                    <option value="evidence">Most Evidence</option>
+                    <option value="name">Alphabetical (A-Z)</option>
+                  </select>
+                </div>
+              </div>
+
               {/* ── Concept Cards Grid ── */}
               {metrics.concepts.length === 0 ? (
                 <Card className="border-slate-800 bg-slate-900/60 p-12 text-center">
@@ -616,10 +714,22 @@ export default function GrowthAnalyticsPage() {
                     <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs">Upload Materials</Button>
                   </Link>
                 </Card>
+              ) : filteredConcepts.length === 0 ? (
+                <Card className="border-slate-800 bg-slate-900/60 p-8 text-center space-y-3">
+                  <Search className="w-8 h-8 mx-auto text-slate-600" />
+                  <p className="text-sm text-slate-300 font-medium">No concepts match your filter</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => { setConceptSearch(""); setConceptFilter("all"); }}
+                    className="text-xs border-slate-700 text-slate-300"
+                  >
+                    Reset Filters
+                  </Button>
+                </Card>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {[...metrics.concepts]
-                    .sort((a, b) => a.score - b.score) // weakest first
+                  {filteredConcepts
                     .map((concept, idx) => {
                       const mc = getMasteryColor(concept.score);
                       const ev = evidenceStrength(concept.evidence_count);
@@ -752,7 +862,7 @@ export default function GrowthAnalyticsPage() {
                             {/* ── Quick Action Buttons ── */}
                             <div className="flex items-center gap-2 pt-1">
                               <Link
-                                href={`/spaces/${spaceId}/projects/${projectId}/tutor`}
+                                href={`/spaces/${spaceId}/projects/${projectId}/tutor?q=${encodeURIComponent("Explain " + concept.name + " in detail with core principles and examples.")}`}
                                 className="flex-1"
                               >
                                 <Button

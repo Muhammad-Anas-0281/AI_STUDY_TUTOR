@@ -385,7 +385,21 @@ This document records the user prompts, actions performed, timestamps, and corre
      - Updated `material_service.py` to `import pymupdf as fitz` to clear deprecation warnings.
   4. **Verification**:
      - Tested `uvicorn main:app` locally — server starts in under 1 second using < 70MB initial RAM.
-     - Committed and pushed to GitHub for automated Render redeployment.
+---
+
+### Entry 20
+- **Phase**: Phase 8 — Frontend Build & Path Alias Resolution for Render Linux
+- **Timestamp**: 2026-09-19T01:26:00+05:30
+- **User Prompt**:
+  > "Module not found: Can't resolve '@/lib/auth-context'... Build failed because of webpack errors"
+- **Root Cause**:
+  - In `frontend/tsconfig.json`, `"paths": { "@/*": ["./*"] }` was missing `"baseUrl": "."`.
+  - In Linux build environments (like Render), Webpack was unable to resolve `@/*` aliases without an explicit `baseUrl` or custom Webpack alias resolution.
+- **Work Done**:
+  1. Added `"baseUrl": "."` to `frontend/tsconfig.json`.
+  2. Added an explicit Webpack fallback alias `config.resolve.alias["@"] = path.resolve(__dirname)` in `frontend/next.config.mjs`.
+  3. Verified `npm run build` locally: compiled all 8 pages successfully with 0 errors.
+  4. Committed and pushed to GitHub.
 
 
 

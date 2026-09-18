@@ -397,9 +397,23 @@ This document records the user prompts, actions performed, timestamps, and corre
   - In Linux build environments (like Render), Webpack was unable to resolve `@/*` aliases without an explicit `baseUrl` or custom Webpack alias resolution.
 - **Work Done**:
   1. Added `"baseUrl": "."` to `frontend/tsconfig.json`.
-  2. Added an explicit Webpack fallback alias `config.resolve.alias["@"] = path.resolve(__dirname)` in `frontend/next.config.mjs`.
-  3. Verified `npm run build` locally: compiled all 8 pages successfully with 0 errors.
+---
+
+### Entry 21
+- **Phase**: Phase 8 — Frontend Build Dependencies for NODE_ENV=production on Render
+- **Timestamp**: 2026-09-19T01:28:00+05:30
+- **User Prompt**:
+  > "Error: Cannot find module 'autoprefixer'... Build failed because of webpack errors"
+- **Root Cause**:
+  - `autoprefixer`, `postcss`, `tailwindcss`, and `typescript` were listed in `devDependencies`.
+  - On Render, setting `NODE_ENV=production` causes `npm install` to skip `devDependencies` entirely, leaving PostCSS without `autoprefixer` during `next build`.
+- **Work Done**:
+  1. Moved `autoprefixer`, `postcss`, `tailwindcss`, `typescript`, `@types/node`, `@types/react`, and `@types/react-dom` into `dependencies` in `frontend/package.json`.
+  2. Updated `render.yaml` to run `npm install --include=dev && npm run build` for double safety.
+  3. Verified `npm run build` succeeds with 0 errors.
   4. Committed and pushed to GitHub.
+
+
 
 
 

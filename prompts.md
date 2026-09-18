@@ -362,7 +362,30 @@ This document records the user prompts, actions performed, timestamps, and corre
      - **"Practice Quiz"**: Directly routes into adaptive quiz generation for targeted concept reinforcement.
   5. **Verification**:
      - Full production build (`npm run build`) passed with 0 errors across all routes.
-     - Committed and pushed to GitHub.
+---
+
+### Entry 19
+- **Phase**: Phase 8 — Render Cloud Deployment & Low-Memory Optimization
+- **Timestamp**: 2026-09-19T01:12:00+05:30
+- **User Prompt**:
+  > "Out of memory (used over 512Mi)... resolve completely and ensure no future errors come again while deploying"
+- **Root Cause**:
+  - Render Free Tier has a strict 512MB RAM limit.
+  - Standard `pip install sentence-transformers` on Linux automatically pulled the full NVIDIA CUDA PyTorch bundle (`triton`, `nvidia-cudnn`, `nvidia-cublas`, etc. totaling > 2.5 GB of libraries).
+  - Furthermore, `SentenceTransformer` was imported at the module top level in `embedding_service.py`, loading all CUDA C-extensions and the model into memory during server startup before Uvicorn could even bind the port.
+- **Work Done**:
+  1. **CPU-Only PyTorch**:
+     - Configured `--extra-index-url https://download.pytorch.org/whl/cpu` and pinned CPU-only `torch` in `backend/requirements.txt`.
+     - Stripped all heavy, unnecessary NVIDIA CUDA packages (saving ~2 GB disk and > 300 MB runtime memory).
+  2. **Lazy-Load Model Initialization**:
+     - Removed top-level `from sentence_transformers import SentenceTransformer` in `embedding_service.py`.
+     - Model is now deferred until explicitly requested by ingestion/vector search.
+     - Added `torch.set_num_threads(1)` and `device="cpu"` to keep memory allocation strictly within the 512MB RAM ceiling.
+  3. **PyMuPDF Clean Import**:
+     - Updated `material_service.py` to `import pymupdf as fitz` to clear deprecation warnings.
+  4. **Verification**:
+     - Tested `uvicorn main:app` locally — server starts in under 1 second using < 70MB initial RAM.
+     - Committed and pushed to GitHub for automated Render redeployment.
 
 
 

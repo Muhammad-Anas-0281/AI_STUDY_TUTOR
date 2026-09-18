@@ -522,87 +522,274 @@ export default function GrowthAnalyticsPage() {
         )}
 
         {/* ===== TAB: CONCEPTS ===== */}
-        {activeTab === "concepts" && metrics && (
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                  <BrainCircuit className="w-4 h-4 text-emerald-400" />
-                  Project Concept Mastery
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Bayesian moving-average tracking across quizzes and tutor interactions.
-                </p>
-              </div>
-              <Link href={`/spaces/${spaceId}/projects/${projectId}/quiz`}>
-                <Button size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs flex items-center gap-1.5">
-                  <Brain className="w-3.5 h-3.5" /> Practice Weak Concepts
-                </Button>
-              </Link>
-            </div>
+        {activeTab === "concepts" && metrics && (() => {
+          // Derived stats for the tier summary
+          const mastered = metrics.concepts.filter(c => c.score >= 80).length;
+          const proficient = metrics.concepts.filter(c => c.score >= 60 && c.score < 80).length;
+          const practicing = metrics.concepts.filter(c => c.score >= 40 && c.score < 60).length;
+          const learning = metrics.concepts.filter(c => c.score >= 20 && c.score < 40).length;
+          const struggling = metrics.concepts.filter(c => c.score < 20).length;
 
-            {metrics.concepts.length === 0 ? (
-              <Card className="border-slate-800 bg-slate-900/60 p-12 text-center">
-                <BrainCircuit className="w-12 h-12 mx-auto text-slate-700 mb-3" />
-                <p className="text-slate-300 font-semibold">No Concepts Yet</p>
-                <p className="text-xs text-slate-500 mt-1 mb-4">Upload study materials and extract concepts to track your mastery.</p>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {metrics.concepts.map((concept) => {
-                  const mc = getMasteryColor(concept.score);
-                  return (
-                    <Card key={concept.id} className="border-slate-800 bg-slate-900/60 hover:border-slate-700 transition-all shadow-lg overflow-hidden">
-                      <div className="p-5 space-y-4">
-                        {/* Top row */}
-                        <div className="flex items-start gap-3">
-                          <div className="relative shrink-0">
-                            <RingGauge score={concept.score} size={52} />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-[10px] font-black text-white">{concept.score.toFixed(0)}%</span>
+          // Study tips by tier
+          const studyTip = (score: number): string => {
+            if (score >= 80) return "Excellent! Try teaching this concept to solidify retention.";
+            if (score >= 60) return "Good progress — review edge cases and advanced applications.";
+            if (score >= 40) return "Keep practicing — focus on the core definitions and examples.";
+            if (score >= 20) return "Needs more attention — revisit materials and ask the AI Tutor.";
+            return "Start here — read the source material and ask the AI Tutor for an explanation.";
+          };
+
+          // Evidence strength label
+          const evidenceStrength = (count: number): { label: string; color: string } => {
+            if (count >= 10) return { label: "Strong evidence base", color: "text-emerald-400" };
+            if (count >= 5) return { label: "Moderate evidence", color: "text-blue-400" };
+            if (count >= 2) return { label: "Limited evidence", color: "text-amber-400" };
+            return { label: "Very low evidence", color: "text-red-400" };
+          };
+
+          return (
+            <div className="space-y-6">
+              {/* Section header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                    <BrainCircuit className="w-4 h-4 text-emerald-400" />
+                    Project Concept Mastery
+                    <span className="text-xs font-normal text-slate-500">— {metrics.concepts.length} concepts tracked</span>
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Bayesian moving-average mastery scores updated after every quiz and tutor session.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/spaces/${spaceId}/projects/${projectId}/tutor`}>
+                    <Button size="sm" variant="outline" className="text-xs border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5">
+                      <MessageSquare className="w-3.5 h-3.5 text-indigo-400" /> Ask Tutor
+                    </Button>
+                  </Link>
+                  <Link href={`/spaces/${spaceId}/projects/${projectId}/quiz`}>
+                    <Button size="sm" className="bg-violet-600 hover:bg-violet-500 text-white text-xs gap-1.5">
+                      <Brain className="w-3.5 h-3.5" /> Take Quiz
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* ── Tier Distribution Summary Strip ── */}
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { label: "Mastered", count: mastered, color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400", dot: "bg-emerald-500" },
+                  { label: "Proficient", count: proficient, color: "bg-blue-500/10 border-blue-500/30 text-blue-400", dot: "bg-blue-500" },
+                  { label: "Practicing", count: practicing, color: "bg-indigo-500/10 border-indigo-500/30 text-indigo-400", dot: "bg-indigo-500" },
+                  { label: "Learning", count: learning, color: "bg-amber-500/10 border-amber-500/30 text-amber-400", dot: "bg-amber-500" },
+                  { label: "Struggling", count: struggling, color: "bg-red-500/10 border-red-500/30 text-red-400", dot: "bg-red-500" },
+                ].map(({ label, count, color, dot }) => (
+                  <div key={label} className={`flex flex-col items-center p-3 rounded-xl border ${color} text-center`}>
+                    <div className={`w-2 h-2 rounded-full ${dot} mb-1.5`} />
+                    <span className="text-xl font-black">{count}</span>
+                    <span className="text-[10px] font-medium mt-0.5 opacity-80">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* ── Mastery Distribution Bar ── */}
+              {metrics.concepts.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs text-slate-500 font-medium">Overall Mastery Distribution</p>
+                  <div className="flex h-3 rounded-full overflow-hidden gap-0.5">
+                    {mastered > 0 && <div className="bg-emerald-500 rounded-full" style={{ flex: mastered }} title={`Mastered: ${mastered}`} />}
+                    {proficient > 0 && <div className="bg-blue-500 rounded-full" style={{ flex: proficient }} title={`Proficient: ${proficient}`} />}
+                    {practicing > 0 && <div className="bg-indigo-500 rounded-full" style={{ flex: practicing }} title={`Practicing: ${practicing}`} />}
+                    {learning > 0 && <div className="bg-amber-500 rounded-full" style={{ flex: learning }} title={`Learning: ${learning}`} />}
+                    {struggling > 0 && <div className="bg-red-500 rounded-full" style={{ flex: struggling }} title={`Struggling: ${struggling}`} />}
+                  </div>
+                </div>
+              )}
+
+              {/* ── Concept Cards Grid ── */}
+              {metrics.concepts.length === 0 ? (
+                <Card className="border-slate-800 bg-slate-900/60 p-12 text-center">
+                  <BrainCircuit className="w-12 h-12 mx-auto text-slate-700 mb-3" />
+                  <p className="text-slate-300 font-semibold">No Concepts Yet</p>
+                  <p className="text-xs text-slate-500 mt-1 mb-4">Upload study materials and extract concepts to track your mastery.</p>
+                  <Link href={`/spaces/${spaceId}/projects/${projectId}/materials`}>
+                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs">Upload Materials</Button>
+                  </Link>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[...metrics.concepts]
+                    .sort((a, b) => a.score - b.score) // weakest first
+                    .map((concept, idx) => {
+                      const mc = getMasteryColor(concept.score);
+                      const ev = evidenceStrength(concept.evidence_count);
+                      const tip = studyTip(concept.score);
+                      const rank = idx + 1;
+                      const isWeak = concept.score < 40;
+                      return (
+                        <Card
+                          key={concept.id}
+                          className={`border bg-slate-900 shadow-xl overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-0.5 ${
+                            isWeak ? "border-red-500/20 hover:border-red-500/40" : "border-slate-800 hover:border-slate-700"
+                          }`}
+                        >
+                          {/* Card accent top bar */}
+                          <div className={`h-1 w-full ${mc.bg} opacity-80`} />
+
+                          <div className="p-5 space-y-4">
+                            {/* ── Header Row ── */}
+                            <div className="flex items-start gap-3">
+                              {/* Ring gauge */}
+                              <div className="relative shrink-0">
+                                <RingGauge score={concept.score} size={64} />
+                                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                  <span className={`text-xs font-black ${mc.text}`}>{concept.score.toFixed(0)}%</span>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0 pt-0.5">
+                                {/* Rank badge */}
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[10px] text-slate-500 font-mono">#{rank} weakest</span>
+                                  {isWeak && (
+                                    <Badge variant="outline" className="text-[9px] border-red-500/40 text-red-400 bg-red-500/10 px-1.5 py-0">
+                                      Needs Work
+                                    </Badge>
+                                  )}
+                                </div>
+                                {/* Concept name */}
+                                <h3 className="font-bold text-sm text-white leading-tight">{concept.name}</h3>
+                              </div>
+                            </div>
+
+                            {/* ── Mastery Level Bar ── */}
+                            <div className="space-y-1.5">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className={`font-bold ${mc.text}`}>{mc.label}</span>
+                                <span className="text-slate-200 font-mono font-bold">{concept.score.toFixed(1)}%</span>
+                              </div>
+                              <div className="relative h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className={`absolute left-0 top-0 h-full rounded-full ${mc.bg}`}
+                                  style={{ width: `${concept.score}%`, opacity: 0.85 }}
+                                />
+                                {/* Milestone markers */}
+                                {[40, 60, 80].map((m) => (
+                                  <div
+                                    key={m}
+                                    className="absolute top-0 h-full w-px bg-slate-600/50"
+                                    style={{ left: `${m}%` }}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between text-[9px] text-slate-600">
+                                <span>0%</span>
+                                <span>40%</span>
+                                <span>60%</span>
+                                <span>80%</span>
+                                <span>100%</span>
+                              </div>
+                            </div>
+
+                            {/* ── Description ── */}
+                            {concept.description && (
+                              <div className="bg-slate-950/60 rounded-xl px-3 py-2.5 border border-slate-800">
+                                <p className="text-[11px] text-slate-300 leading-relaxed">{concept.description}</p>
+                              </div>
+                            )}
+
+                            {/* ── Evidence & Data Quality ── */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-slate-950/50 rounded-xl p-3 border border-slate-800 space-y-1">
+                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Evidence Points</p>
+                                <p className="text-lg font-black text-white font-mono">{concept.evidence_count}</p>
+                                <p className={`text-[10px] font-semibold ${ev.color}`}>{ev.label}</p>
+                              </div>
+
+                              <div className="bg-slate-950/50 rounded-xl p-3 border border-slate-800 space-y-1">
+                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wide">Status</p>
+                                <Badge variant="outline" className={`text-[10px] font-bold uppercase px-2 py-0.5 ${mc.badge}`}>
+                                  {concept.status.replace(/_/g, " ")}
+                                </Badge>
+                                {concept.updated_at && (
+                                  <p className="text-[10px] text-slate-600">
+                                    Updated {new Date(concept.updated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* ── Evidence Strength Bar ── */}
+                            <div className="space-y-1">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>Evidence Strength</span>
+                                <span className={`font-semibold ${ev.color}`}>{Math.min(concept.evidence_count, 10)}/10</span>
+                              </div>
+                              <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    concept.evidence_count >= 10 ? "bg-emerald-500" :
+                                    concept.evidence_count >= 5 ? "bg-blue-500" :
+                                    concept.evidence_count >= 2 ? "bg-amber-500" : "bg-red-500"
+                                  }`}
+                                  style={{ width: `${Math.min((concept.evidence_count / 10) * 100, 100)}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* ── AI Study Tip ── */}
+                            <div className={`rounded-xl px-3 py-2.5 border flex items-start gap-2 ${
+                              isWeak
+                                ? "bg-red-500/5 border-red-500/20"
+                                : concept.score >= 80
+                                ? "bg-emerald-500/5 border-emerald-500/20"
+                                : "bg-indigo-500/5 border-indigo-500/20"
+                            }`}>
+                              <Sparkles className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isWeak ? "text-red-400" : concept.score >= 80 ? "text-emerald-400" : "text-indigo-400"}`} />
+                              <p className="text-[11px] leading-relaxed text-slate-300">{tip}</p>
+                            </div>
+
+                            {/* ── Quick Action Buttons ── */}
+                            <div className="flex items-center gap-2 pt-1">
+                              <Link
+                                href={`/spaces/${spaceId}/projects/${projectId}/tutor`}
+                                className="flex-1"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full text-xs border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5"
+                                >
+                                  <MessageSquare className="w-3 h-3 text-indigo-400" />
+                                  Study with Tutor
+                                </Button>
+                              </Link>
+                              <Link
+                                href={`/spaces/${spaceId}/projects/${projectId}/quiz`}
+                                className="flex-1"
+                              >
+                                <Button
+                                  size="sm"
+                                  className={`w-full text-xs gap-1.5 ${
+                                    isWeak
+                                      ? "bg-red-600 hover:bg-red-500 text-white"
+                                      : "bg-violet-600 hover:bg-violet-500 text-white"
+                                  }`}
+                                >
+                                  <Brain className="w-3 h-3" />
+                                  {isWeak ? "Practice Now" : "Take Quiz"}
+                                </Button>
+                              </Link>
                             </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-bold text-sm text-slate-100 leading-snug truncate">{concept.name}</h3>
-                            {concept.description && (
-                              <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2 mt-0.5">{concept.description}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Progress bar */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className={`font-bold ${mc.text}`}>{mc.label}</span>
-                            <span className="text-slate-500">{concept.evidence_count} evidence pts</span>
-                          </div>
-                          <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className={`absolute left-0 top-0 h-full rounded-full transition-all ${mc.bg}`}
-                              style={{ width: `${concept.score}%`, opacity: 0.8 }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Status badge & updated */}
-                        <div className="flex items-center justify-between">
-                          <Badge variant="outline" className={`text-[10px] font-semibold uppercase ${mc.badge}`}>
-                            {concept.status.replace("_", " ")}
-                          </Badge>
-                          {concept.updated_at && (
-                            <span className="text-[10px] text-slate-600">
-                              {new Date(concept.updated_at).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
+                        </Card>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ===== TAB: RECOMMENDATIONS ===== */}
         {activeTab === "recommendations" && (

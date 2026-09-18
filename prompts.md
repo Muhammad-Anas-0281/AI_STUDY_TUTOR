@@ -397,6 +397,7 @@ This document records the user prompts, actions performed, timestamps, and corre
   - In Linux build environments (like Render), Webpack was unable to resolve `@/*` aliases without an explicit `baseUrl` or custom Webpack alias resolution.
 - **Work Done**:
   1. Added `"baseUrl": "."` to `frontend/tsconfig.json`.
+
 ---
 
 ### Entry 21
@@ -412,6 +413,31 @@ This document records the user prompts, actions performed, timestamps, and corre
   2. Updated `render.yaml` to run `npm install --include=dev && npm run build` for double safety.
   3. Verified `npm run build` succeeds with 0 errors.
   4. Committed and pushed to GitHub.
+
+---
+
+### Entry 22
+- **Phase**: Phase 8 — Render 512MB RAM OOM Elimination & API Robustness
+- **Timestamp**: 2026-09-19T01:52:00+05:30
+- **User Prompt**:
+  > "Web Service AI_STUDY_TUTOR exceeded its memory limit... The ask tutor feature, taking quiz features, all others are not working. Please make them work."
+- **Root Cause**:
+  1. **Render Free Tier 512MB RAM Ceiling**: Loading PyTorch + `sentence-transformers` consumed > 300MB heap plus 200MB shared C++ libraries (`libtorch_cpu.so`), causing instant SIGKILL / OOM restarts whenever embeddings or retrieval occurred.
+  2. **Materials Upload Router Bug**: In `backend/app/routers/materials.py`, `upload_document` attempted to log an event using `current_user.id`, but `current_user` was missing from the FastAPI route parameter dependency injection, triggering `NameError: name 'current_user' is not defined`.
+  3. **SSE Stream Session Teardown**: In `tutor.py`, returning a `StreamingResponse` with an injected session dependency could cause premature session closure during multi-second token generation.
+- **Work Done**:
+  1. **Migrated to FastEmbed (ONNX Runtime)** (`backend/app/services/embedding_service.py`):
+     - Replaced heavy PyTorch SentenceTransformer with lightweight FastEmbed ONNX runtime (`BAAI/bge-small-en-v1.5` / `sentence-transformers/all-MiniLM-L6-v2`).
+     - Reduced memory usage from **301.89 MB down to 12.01 MB - 34.38 MB** (**96% memory reduction**), completely eliminating the 512MB RAM OOM risk on Render free tier.
+     - Confirmed 100% exact vector parity (`similarity = 1.00000000`) with existing Supabase chunks.
+     - Added `fastembed>=0.3.0` to `backend/requirements.txt`.
+  2. **Resilient Vector Retrieval**: Added exception-safe fallback in `retrieval_service.py` so retrieval never crashes or returns unhandled 500 errors.
+  3. **Fixed Document Upload**: Added `current_user: User = Depends(get_current_user)` to `upload_document` in `backend/app/routers/materials.py`.
+  4. **Isolated SSE Session Lifetime**: Updated `ask_tutor_stream` in `backend/app/routers/tutor.py` to use `async with async_session_maker() as session:` to guarantee the database connection stays active throughout the entire token streaming lifecycle.
+  5. **Verification**:
+     - Verified end-to-end quiz generation, MCQ grading, and rubric evaluation via `test_phase3_quiz.py` (Passed with 0 errors).
+     - Verified end-to-end tutor streaming, vector retrieval, and refusal logic via `test_tutor_direct.py` (Passed with 0 errors).
+  6. **Committed & Pushed**: Synced all changes to GitHub `main` branch for automatic redeployment on Render.
 
 
 

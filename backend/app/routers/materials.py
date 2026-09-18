@@ -32,6 +32,7 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     project: Project = Depends(get_project_or_403),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     if not file.filename.lower().endswith(".pdf"):

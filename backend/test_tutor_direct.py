@@ -1,7 +1,12 @@
 import asyncio
 import os
+import sys
 import json
 import fitz
+
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.db.session import async_session_maker

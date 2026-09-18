@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
 
-from app.db.session import get_db
+from app.db.session import get_db, async_session_maker
 from app.db.models.user import User
 from app.db.models.project import Project
 from app.db.models.space import Space
@@ -23,8 +23,7 @@ async def ask_tutor_stream(
     project_id: str,
     body: TutorAskRequest,
     current_user: User = Depends(get_current_user),
-    project: Project = Depends(get_project_or_403),
-    db: AsyncSession = Depends(get_db)
+    project: Project = Depends(get_project_or_403)
 ):
     if not body.question.strip():
         raise HTTPException(
@@ -33,14 +32,15 @@ async def ask_tutor_stream(
         )
 
     async def sse_event_stream():
-        async for event in tutor_service.ask_stream(
-            project=project,
-            user_id=current_user.id,
-            question=body.question.strip(),
-            session_id=body.session_id,
-            db=db
-        ):
-            yield f"data: {json.dumps(event)}\n\n"
+        async with async_session_maker() as session:
+            async for event in tutor_service.ask_stream(
+                project=project,
+                user_id=current_user.id,
+                question=body.question.strip(),
+                session_id=body.session_id,
+                db=session
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(
         sse_event_stream(),
